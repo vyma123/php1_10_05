@@ -2,7 +2,7 @@
 require_once 'includes/db.inc.php';
 require_once 'includes/functions.php';
 
-$tag =$category = $added_cate =  $added_tag = $exist_cate = $exist_tag ='';
+$tag =$category = $added_cate =  $added_tag = $exist_cate = $exist_tag = $cat_err = $tag_err ='';
 
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -10,7 +10,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $tag = test_input($_POST["tag"]);
 
 
-    
+    $categories = explode(',', $category);
+    $tags = explode(',', $tag);
+    $categories = array_map('trim', $categories);
+    $tags = array_map('trim', $tags);
+
+
+
+   
         if(empty($category) && empty($tag) ){
             $cateempty_field = 'empty_field';
             $tagempty_field = 'empty_field';
@@ -25,36 +32,79 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         $exist_cate = get_property($pdo, $category) ? 'category already exists' : '';
-        $exist_tag = get_property($pdo, $tag) ? 'tag already exists' : '';
+        $exist_tag = get_property($pdo, $tag) ? 'tag already exists' : ''; 
+
+        if(!isValidInput($category) && isValidInput($tag)){
+           $cat_err =  $category;
+           $tag_err =  $tag;
+
+        }
+
+        if(!isValidInput($tag) && isValidInput($category) ){
+            $tag_err =  $tag;
+           $cat_err =  $category;
+         }
+
+         if(!isValidInput($tag) && !isValidInput($category)){
+            $tag_err =  $tag;
+            $cat_err =  $category;
+         }
+
+         
 
         
-        if (!get_property($pdo, $category) && !empty($category) && empty($tag) && isValidInput($category) ) {
-            $type_ = 'category';
-            add_property($pdo, $type_, $category);
-            $added_cate = 'added category: '.$category. '';
-            $category = '';
+   
+        if(isValidInput($category)){
+            foreach($categories as $category){
+                $category = trim($category);
+                if (!get_property($pdo, $category) && !empty($category) && empty($tag)) {
+                    $type_ = 'category';
+                    add_property($pdo, $type_, $category);
+                    $added_cate = 'added categories';
+                    $cat_err = '';
+
+                }
+            }
+        }
+       
+        if(isValidInput($tag)){
+            foreach($tags as $tag){
+                $tag = trim($tag);
+                if (!get_property($pdo, $tag) && !empty($tag) && empty($category)) {
+                    $type_ = 'tag';
+                    add_property($pdo, $type_, $tag);
+                    $added_tag = 'added tags';
+                    $tag_err = '';
+                }
+            }
         }
 
-        if (!get_property($pdo, $tag) && !empty($tag) && empty($category) && isValidInput($tag) ) {
-            $type_ = 'tag';
-            add_property($pdo, $type_, $tag);
-            $added_tag = 'added tag: '.$tag. '';
-            $tag = '';
+        if (isValidInput($tag) && isValidInput($category)) {
+            foreach ($categories as $category) {
+                $category = trim($category);
+                // Use array_map to iterate through tags
+                array_map(function($tag) use ($pdo, $category) {
+                    $tag = trim($tag);
+                    if (!get_property($pdo, $tag) && !get_property($pdo, $category) && !empty($tag) && !empty($category)) {
+                        $type_1 = 'category';
+                        $type_2 = 'tag';
+                        add_property($pdo, $type_1, $category);
+                        add_property($pdo, $type_2, $tag);
+                        
+                   
+                    }
+                }, $tags); // Pass tags as the second parameter to array_map
+            }
         }
 
-        if (!get_property($pdo, $tag) && !get_property($pdo, $category) && isValidInput($tag) && isValidInput($category)) {
-            $type_1 = 'category';
-            $type_2 = 'tag';
-
-            add_property($pdo, $type_1, $category);
-            add_property($pdo, $type_2, $tag);
-
-            $added_cate = 'added category: '.$category. '';
-            $added_tag = 'added tag: '.$tag. '';
-
-            $category = '';
-            $tag = '';
+        if(
+        isValidInput($tag) && isValidInput($category)){
+          // You can set messages here if needed
+          $added_cate = 'added category';
+          $added_tag = 'added tag';
         }
+        
+        
 
         
         if( !empty($category) && !isValidInput($category)){
@@ -63,6 +113,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if( !empty($tag) && !isValidInput($tag)){
             $tagempty_field = 'empty_field';
         }
+
     
 }
 ?>
@@ -92,10 +143,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <?php echo $added_tag;
                   echo $exist_tag;?>
             <div class="ui input">
-                <input class="<?= $cateempty_field ?>" value="<?= $category?>" name="category" type="text" placeholder="Category...">
+                <input class="<?= $cateempty_field ?>" value="<?= $cat_err?>" name="category" type="text" placeholder="Category...">
             </div>
             <div class="ui input">
-                <input class="<?= $tagempty_field ?>" value="<?= $tag?>" name="tag" type="text" placeholder="Tag...">
+                <input class="<?= $tagempty_field ?>" value="<?= $tag_err?>" name="tag" type="text" placeholder="Tag...">
             </div>
             <div>
                 <a class="ui button" href="index.php">
