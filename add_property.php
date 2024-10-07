@@ -135,7 +135,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <body>
     <br>
     <h1 class="add_property">Add Property</h1>
-    <form action="" method="post">
+    <form action="" method="post">  
         <div class="container_property">
             <?php echo $added_cate;
                   echo $exist_cate;?>
