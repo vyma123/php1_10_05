@@ -1,9 +1,10 @@
 <?php
+
 require_once 'includes/db.inc.php';
 require_once 'includes/functions.php';
 
 $tag =$category = $added_cate =  $added_tag = $exist_cate = $exist_tag = $cat_err = $tag_err ='';
-
+$new_categories = $exist_categories = $new_tags = $exist_tags =  [];
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $category = test_input($_POST["category"]);
@@ -14,25 +15,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $tags = explode(',', $tag);
     $categories = array_map('trim', $categories);
     $tags = array_map('trim', $tags);
-
-
-
+    $type_1 = 'category';
+    $type_2 = 'tag';
+    
    
         if(empty($category) && empty($tag) ){
             $cateempty_field = 'empty_field';
             $tagempty_field = 'empty_field';
-        }else if(get_property($pdo, $category) && get_property($pdo, $tag)){
+        }else if(get_property($pdo, $category, $type_1) && get_property($pdo, $tag,$type_2)){
             $cateempty_field = 'empty_field';
             $tagempty_field = 'empty_field';
         }
-        else if(get_property($pdo, $category) ){
+        else if(get_property($pdo, $category,$type_1) ){
             $cateempty_field = 'empty_field';
-        }else if(get_property($pdo, $tag)){
+        }else if(get_property($pdo, $tag,$type_2)){
             $tagempty_field = 'empty_field';
         }
 
-        $exist_cate = get_property($pdo, $category) ? 'category already exists' : '';
-        $exist_tag = get_property($pdo, $tag) ? 'tag already exists' : ''; 
+        $exist_cate = get_property($pdo, $category,$type_1) ? 'category already exists' : '';
+        $exist_tag = get_property($pdo, $tag,$type_2) ? 'tag already exists' : ''; 
 
         if(!isValidInput($category) && isValidInput($tag)){
            $cat_err =  $category;
@@ -50,60 +51,69 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $cat_err =  $category;
          }
 
-         
-
-        
-   
         if(isValidInput($category)){
             foreach($categories as $category){
                 $category = trim($category);
-                if (!get_property($pdo, $category) && !empty($category) && empty($tag)) {
-                    $type_ = 'category';
-                    add_property($pdo, $type_, $category);
-                    $added_cate = 'added categories';
-                    $cat_err = '';
-
+                if(!empty($category) && empty($tag)){
+                    if (!get_property($pdo, $category,$type_1)) {
+                        add_property($pdo, $type_1, $category);
+                        $new_categories[] = $category;
+                        $cat_err = '';
+                    }else{
+                        $exist_categories[] = $category;
+                    }
                 }
             }
         }
-       
+
         if(isValidInput($tag)){
             foreach($tags as $tag){
                 $tag = trim($tag);
-                if (!get_property($pdo, $tag) && !empty($tag) && empty($category)) {
-                    $type_ = 'tag';
-                    add_property($pdo, $type_, $tag);
-                    $added_tag = 'added tags';
-                    $tag_err = '';
+                if(!empty($tag) && empty($category)){
+                    if (!get_property($pdo, $tag,$type_2) ) {
+                        add_property($pdo, $type_2, $tag);
+                        $new_tags[] = $tag;
+                        $tag_err = '';
+                    }else{
+                        $exist_tags[] = $tag;
+
+                    }
                 }
             }
         }
+
+       
 
         if (isValidInput($tag) && isValidInput($category)) {
             foreach ($categories as $category) {
                 $category = trim($category);
-                // Use array_map to iterate through tags
-                array_map(function($tag) use ($pdo, $category) {
+                array_map(function($tag) use ($pdo, $category, &$new_categories, &$new_tags, &$exist_categories, &$exist_tags) {
+                    $type_1 = 'category';
                     $tag = trim($tag);
-                    if (!get_property($pdo, $tag) && !get_property($pdo, $category) && !empty($tag) && !empty($category)) {
-                        $type_1 = 'category';
+                    if (!empty($tag) && !empty($category)) {
                         $type_2 = 'tag';
-                        add_property($pdo, $type_1, $category);
-                        add_property($pdo, $type_2, $tag);
-                        
-                   
+                        if(!get_property($pdo, $category,$type_1)){
+                            add_property($pdo, $type_1, $category);
+                            $new_categories[] = $category;
+
+                        }else {
+                            $exist_categories[] = $category;
+
+                        }
+                        if(!get_property($pdo, $tag,$type_2)){
+                            add_property($pdo, $type_2, $tag);
+                            $new_tags[] = $tag;
+                        }else {
+                            $exist_tags[] = $tag;
+
+                        }
+                 
+                    
                     }
-                }, $tags); // Pass tags as the second parameter to array_map
+                }, $tags); 
             }
         }
 
-        if(
-        isValidInput($tag) && isValidInput($category)){
-          // You can set messages here if needed
-          $added_cate = 'added category';
-          $added_tag = 'added tag';
-        }
-        
         
 
         
@@ -115,8 +125,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
     
+        $added_cate = set_message($new_categories, $exist_categories, 'added categories', 'Category already exists');
+        $added_tag = set_message($new_tags, $exist_tags, 'added tags', 'tag already exists');
 }
+
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -135,7 +149,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <body>
     <br>
     <h1 class="add_property">Add Property</h1>
-    <form action="" method="post">  
+    <form action="" method="post">
         <div class="container_property">
             <?php echo $added_cate;
                   echo $exist_cate;?>

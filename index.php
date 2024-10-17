@@ -1,4 +1,13 @@
+<?php 
+require_once "includes/db.inc.php";
+require_once "includes/functions.php";
 
+
+
+// get all products 
+$results = select_all_products($pdo);
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -26,7 +35,7 @@
         <div class="product_header">
             <div class="product_header_top">
                 <div>
-                    <button class="ui primary button">
+                    <a href="edit_add.php" class="ui primary button">
                         Add product
                     </button>
                     <a href="add_property.php">
@@ -79,7 +88,52 @@
                 </button>
             </div>
         </div>
+
+        <!-- table -->
+    <table class="ui compact celled table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Product name</th>
+      <th>SKU</th>
+      <th>Price</th>
+      <th>Feature Image</th>
+      <th>Gallery</th>
+      <th>Categories</th>
+      <th>Tags</th>
+      <th>Action</th>
+
+    </tr>
+  </thead>
+  <tbody>
+      <?php foreach ($results as $row){
+        $product_id = $row['id'];
+          ?>
+          <tr>
+      <td><?php echo htmlspecialchars($row['date'])?></td>
+      <td><?php echo htmlspecialchars($row['product_name'])?></td>
+      <td><?php echo htmlspecialchars($row['sku'])?></td>
+      <td><?php echo htmlspecialchars($row['price'])?></td>
+      <td>
+          <img width="100" src="./uploads/<?php echo $row['featured_image']; ?>">
+
+      </td>
+      <td>sfds.jpg,dsfsd.png</td>
+      <td>category1</td>
+      <td>tag1</td>
+      <td>
+        <a href="edit_add.php?product_id=<?php echo $product_id  ?>">Edit</a>
+        <a href="delete.php">Delete</a>
+
+      </td>
+    </tr>
+
+      <?php }?>
+  </tbody>
+</table>
     </section>
+
+
 
 </body>
 
