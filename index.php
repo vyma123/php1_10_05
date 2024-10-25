@@ -111,7 +111,22 @@ $results = select_all_products($pdo);
           <img width="100" src="./uploads/<?php echo $row['featured_image']; ?>">
 
       </td>
-      <td>sfds.jpg,dsfsd.png</td>
+      <td>
+      <div class="">
+            <?php 
+            $query = "SELECT p.name_ FROM product_property pp
+                    JOIN property p ON pp.property_id = p.id
+                    WHERE pp.product_id = :product_id AND p.type_ = 'gallery'";
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(':product_id', $product_id, PDO::PARAM_INT);
+            $stmt->execute();
+            $galleryImages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($galleryImages as $image) {?> 
+
+            <img height="40" src="./uploads/<?= $image['name_'] ?>">
+
+            <?php }?>
+      </td>
       <td>category1</td>
       <td>tag1</td>
       <td>

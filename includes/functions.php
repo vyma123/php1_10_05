@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 function isValidInput($input){
-    return preg_match('/^[a-z0-9 .,\-]+$/i', $input);
+    return preg_match('/^[\p{L}0-9 .,\-]+$/u', $input);
 }
 
 function add_property(object $pdo, string $type_, string $name) {
