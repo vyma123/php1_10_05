@@ -2,12 +2,10 @@
 require_once "includes/db.inc.php";
 require_once "includes/functions.php";
 
-
-
 // get all products 
 $results = select_all_products($pdo);
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -18,13 +16,8 @@ $results = select_all_products($pdo);
     <link rel="stylesheet" href="style.css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-
-
-
     <!-- link semantic ui -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css" integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-
 
     <title>PHP1</title>
 </head>
@@ -127,14 +120,10 @@ $results = select_all_products($pdo);
 
       </td>
     </tr>
-
-      <?php }?>
+    <?php }?>
   </tbody>
 </table>
-    </section>
-
-
-
+</section>
 </body>
 
 </html>

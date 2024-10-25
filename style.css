@@ -81,3 +81,7 @@
     
 }
 
+.images_box{
+    display: flex;
+    flex-direction: column !important;
+}
