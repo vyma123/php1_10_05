@@ -8,14 +8,9 @@
 }
 
 
-.container_property .featured_image{
-    width: 200px !important;
-}
-
-
-
 .container{
     padding: 2rem 2rem;
+
 }
 
 .container .product_header{
@@ -54,7 +49,6 @@
 
 .add_property{
     text-align: center;
-    padding: 2rem;
 }
 
 .container_property{
@@ -62,8 +56,8 @@
     gap: 0.5rem;
     margin: 0 auto;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
+    padding: 0 2rem;
 
 }
 
@@ -79,5 +73,79 @@
 .empty_field{
     border: 1px solid red !important;
     
+}
+
+.container_property .images_box{
+    display: flex;
+    flex-direction: row !important;
+}
+.container_property .images_box .images{
+    border: #929292 1px solid !important;
+    margin: 1px;
+    flex-direction: row !important;
+
+}
+.container_property .select_height{
+    height: 80px !important;
+}
+
+.flex_property{
+    display: flex;
+    align-items: center;
+}
+
+.flex_property label{
+    margin-right: 10px;
+    width: 100px;
+ 
+}
+
+.checkbox-group{
+    gap: 0.5rem;
+    display: flex;
+    flex-wrap: nowrap;       
+    width: 400px;
+    overflow-x: auto; 
+    white-space: nowrap;
+    margin-left: 2rem   ;
+    padding: 0.5rem;
+
+}
+
+.checkbox-group label{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkbox-group .checkbox_property{
+    width: 20px !important;
+    height: 20px !important;
+
+    
+}
+
+.box_property .checkbox-group_flex .property_name{
+    width: 100px;
+    margin: 0 !important;
+
+}
+
+.checkbox-group_flex{
+    display: flex;
+    align-items: center;
+}
+
+.box_property{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 3rem;
+}
+
+.button_edit_add{
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 

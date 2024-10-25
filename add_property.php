@@ -156,11 +156,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <br>
             <?php echo $added_tag;
                   echo $exist_tag;?>
-            <div class="ui input">
-                <input class="<?= $cateempty_field ?>" value="<?= $cat_err?>" name="category" type="text" placeholder="Category...">
+            <div class="ui input flex_property">
+                <label for="category">Category: </label>
+                <input id="category" class="<?= $cateempty_field ?>" value="<?= $cat_err?>" name="category" type="text" placeholder="Category1, Category2, ...">
             </div>
-            <div class="ui input">
-                <input class="<?= $tagempty_field ?>" value="<?= $tag_err?>" name="tag" type="text" placeholder="Tag...">
+            <div class="ui input flex_property">
+               <label for="tag">Tag: </label>
+                <input id="tag" class="<?= $tagempty_field ?>" value="<?= $tag_err?>" name="tag" type="text" placeholder="Tag1, Tag2, ...">
             </div>
             <div>
                 <a class="ui button" href="index.php">
