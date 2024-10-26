@@ -6,6 +6,10 @@ $target_dir = "uploads/";
 $uploadOk = 1;
 
 $product_name = $sku = $price = $name = '';
+$selected_tags = isset($_POST['tags']) ? $_POST['tags'] : [];
+$selected_categories = isset($_POST['categories']) ? $_POST['categories'] : [];
+
+
 
 if(isset($_GET['product_id'])){
 
@@ -27,7 +31,6 @@ if(isset($_GET['product_id'])){
         $stmt->bindParam(':product_id', $product_id, PDO::PARAM_INT);
         $stmt->execute();
     
-        // Lấy kết quả
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($row) {
             $singleFileName = $row['featured_image'];
@@ -38,11 +41,12 @@ if(isset($_GET['product_id'])){
   
 
     if(isset($_POST['add'])){
+
     $overallUploadOk = 1;
     $product_name = test_input($_POST['product_name']);
     $sku = test_input($_POST['sku']);
     $price = test_input($_POST['price']);
-    // Xử lý kiểm tra ảnh đơn lẻ
+
     if (isset($_FILES["singleFile"]) && $_FILES["singleFile"]["error"] == 0) {
         $single_target_file = $target_dir . basename($_FILES["singleFile"]["name"]);
         $single_imageFileType = strtolower(pathinfo($single_target_file, PATHINFO_EXTENSION));
@@ -71,10 +75,8 @@ if(isset($_GET['product_id'])){
         $overallUploadOk = 0;
      }
 
-      // Nếu không có lỗi nào xảy ra, tiến hành upload
       if ($overallUploadOk == 1) {
     
-        // Upload file đơn lẻ
         if (move_uploaded_file(($_FILES["singleFile"]["tmp_name"]), $single_target_file) && !empty($product_name) && !empty($sku) 
             && !empty($price) && isValidInput($product_name) && isValidInput($sku) && isValidInput($price) && numbers_only($price)) {
             echo "The single file " . htmlspecialchars(basename($_FILES["singleFile"]["name"])) . " has been uploaded.<br>";
@@ -139,7 +141,6 @@ if(isset($_GET['product_id'])){
 
            
 
-            // Lấy danh sách ảnh cũ từ database
             $query = "SELECT p.name_ FROM product_property pp
                       JOIN property p ON pp.property_id = p.id
                       WHERE pp.product_id = :product_id AND p.type_ = 'gallery'";
@@ -149,7 +150,6 @@ if(isset($_GET['product_id'])){
             $old_images = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             
-            // Xử lý việc upload ảnh mới
             foreach ($_FILES['multipleFiles']['name'] as $key => $name) {
          
                 if ($_FILES['multipleFiles']['error'][$key] == 0) {
@@ -157,23 +157,18 @@ if(isset($_GET['product_id'])){
                     $target_file = $target_dir . basename($name);
                     $imageFileTypes = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
         
-                    // Validate image
                     $check = getimagesize($_FILES['multipleFiles']['tmp_name'][$key]);
                     if ($check !== false && in_array($imageFileTypes, ["jpg", "jpeg", "png", "gif"]) && $_FILES['multipleFiles']['size'][$key] <= 5000000) {
-                        // Upload ảnh mới
                         
                         if (move_uploaded_file($_FILES['multipleFiles']['tmp_name'][$key], $target_file)) {
                             
-                            // Lưu ảnh mới vào bảng property
                             $query = "INSERT INTO property (name_, type_) VALUES (:name_, 'gallery')";
                             $stmt = $pdo->prepare($query);
                             $stmt->bindParam(':name_', $name);
                             $stmt->execute();
                             
-                            // Lấy ID của ảnh mới vừa thêm
                             $property_id = $pdo->lastInsertId();
                             
-                            // Thêm liên kết giữa sản phẩm và ảnh mới vào bảng product_property
                             $query = "INSERT INTO product_property (product_id, property_id) VALUES (:product_id, :property_id)";
                             $stmt = $pdo->prepare($query);
                             $stmt->bindParam(':product_id', $product_id);
@@ -191,34 +186,99 @@ if(isset($_GET['product_id'])){
             }
         }   
         
-        // insert categories
-        if (!empty($_POST['categories'])) {
-            $categories = $_POST['categories'];
-            $deleteQuery = "DELETE FROM product_property WHERE product_id = :product_id";
-            $deleteStmt = $pdo->prepare($deleteQuery);
-            $deleteStmt->bindParam(':product_id', $product_id, PDO::PARAM_INT);
-            $deleteStmt->execute();
-
-            $query = "INSERT INTO product_property (id) select idp,id from products, property where idp = :product_id";
-        } else {
-            echo 'hello';
-            $categories = []; // or you can choose not to initialize it
-        }
-
-        $allcategories = implode(", ", $categories); 
-        echo htmlspecialchars($allcategories);
-
-
-         // insert tags
-        $tags = isset($_POST['tags']) ? $_POST['tags'] : []; 
-        $alltags = implode(", ", $tags); 
-        echo htmlspecialchars($alltags);
-        
+    
+    if(empty($checked_tag)){
+        $query = " DELETE product_property 
+        FROM product_property 
+        JOIN property ON product_property.property_id = property.id 
+        WHERE product_property.product_id = :product_id 
+        AND property.type_ = 'tag'";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute(['product_id' => $product_id]);
     }
 
-}else {
-    $name_button = 'Add Product';
-}
+    // Check if $selected_categories is not empty before executing the delete query
+    if (!empty($selected_categories)) {
+        // Prepare the query to delete categories that are not selected
+        $query = "DELETE pp FROM product_property pp
+            JOIN property p ON pp.property_id = p.id
+            WHERE pp.product_id = :product_id AND p.type_ = 'category'";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(':product_id', $product_id);
+        $stmt->execute();
+    } else {
+        $query = "DELETE pp FROM product_property pp
+            JOIN property p ON pp.property_id = p.id
+            WHERE pp.product_id = :product_id AND p.type_ = 'category'";
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(':product_id', $product_id);
+            $stmt->execute();
+    }
+
+     // Check if $selected_categories is not empty before executing the delete query
+     if (!empty($selected_tags)) {
+        // Prepare the query to delete categories that are not selected
+        $query = "DELETE pp FROM product_property pp
+            JOIN property p ON pp.property_id = p.id
+            WHERE pp.product_id = :product_id AND p.type_ = 'tag'";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(':product_id', $product_id);
+        $stmt->execute();
+    } else {
+        $query = "DELETE pp FROM product_property pp
+        JOIN property p ON pp.property_id = p.id
+        WHERE pp.product_id = :product_id AND p.type_ = 'tag'";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(':product_id', $product_id);
+        $stmt->execute();
+    }
+
+
+
+        $query = "INSERT INTO product_property (product_id, property_id) VALUES (:product_id, :property_id)";
+        $stmt = $pdo->prepare($query);
+        foreach($selected_tags as $tag_id) {
+            $stmt->execute([
+                'product_id' => $product_id,
+                'property_id' => $tag_id
+            ]);
+        }
+
+        $query = "INSERT INTO product_property (product_id, property_id) VALUES (:product_id, :property_id)";
+        $stmt = $pdo->prepare($query);
+        foreach($selected_categories as $category_id) {
+            $stmt->execute([
+                'product_id' => $product_id,
+                'property_id' => $category_id
+            ]);
+        }
+
+       
+    }
+    $query = "SELECT property_id FROM product_property WHERE product_id = :product_id";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute(['product_id' => $product_id]);
+    $selected_tags = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    $query = "SELECT property_id FROM product_property WHERE product_id = :product_id";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute(['product_id' => $product_id]);
+    $selected_categories = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    }else {
+        $name_button = 'Add Product';
+
+    }
+
+    $query = "SELECT id, name_ FROM property WHERE type_ = 'tag'";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute();
+    $tags = $stmt->fetchAll();
+
+    $query = "SELECT id, name_ FROM property WHERE type_ = 'category'";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute();
+    $categories = $stmt->fetchAll();
 ?>
 
 
@@ -233,7 +293,6 @@ if(isset($_GET['product_id'])){
     <link rel="stylesheet" href="style.css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
-    <!-- link semantic ui -->
      <style>
  
      </style>
@@ -278,31 +337,6 @@ if(isset($_GET['product_id'])){
                 <input  class="<?= $err_multiple_images?>" value="" name="multipleFiles[]" id="multipleFiles" multiple type="file">
             </div>
 
-            <?php 
-          
-          //fetch all data property
-                    $category = 'category';
-          $query = "SELECT name_ FROM property
-                    LEFT JOIN product_property ON property.id = product_property.property_id 
-                    WHERE type_ = :category;";
-            $stmt = $pdo->prepare($query);
-            $stmt->bindParam(":category", $category);
-            $stmt->execute();
-            $categories_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Fetch linked categories for the product
-            $linkedCategoriesQuery = "SELECT name_ FROM property
-                                    JOIN product_property ON property.id = product_property.property_id 
-                                    WHERE product_property.product_id = :product_id AND type_ = :category;";
-            $linkedStmt = $pdo->prepare($linkedCategoriesQuery);
-            $linkedStmt->bindParam(":product_id", $product_id);
-            $linkedStmt->bindParam(":category", $category);
-            $linkedStmt->execute();
-            $linkedCategories = $linkedStmt->fetchAll(PDO::FETCH_COLUMN);
-
-
-            // select category and insert
-            ?>
 
             <div class="box_property">
             <div class="checkbox-group_flex">
@@ -310,15 +344,15 @@ if(isset($_GET['product_id'])){
                     <p>:</p>
             </div>
             <div class="checkbox-group">
-
-            <?php foreach ($categories_result as $rs) { ?>
-                
+            <?php if($categories) {
+            foreach ($categories as $category){
+                $checked_category = in_array($category['id'], $selected_categories) ? 'checked': ''?>
             <label>
-                <input class="checkbox_property" type="checkbox" name="categories[]" value="<?= htmlspecialchars($rs['name_']) ?>" 
-                    <?= in_array($rs['name_'], $linkedCategories) ? 'checked' : '' ?>>
-                <?= htmlspecialchars($rs['name_']) ?>
+                <input <?php echo $checked_category ?> class="checkbox_property" type="checkbox" name="categories[]" value="<?=htmlspecialchars($category['id']) ?>">
+                <?php echo htmlspecialchars($category['name_']) ?>
             </label>
-        <?php } ?>
+           <?php }} ?>
+        </div>
             </div>
             </div>
 
@@ -328,36 +362,14 @@ if(isset($_GET['product_id'])){
         <p>:</p>
     </div>
     <div class="checkbox-group">
-        <?php 
-
-        
-        //fetch all data property
-        $tag = 'tag';
-        $query = "SELECT name_ FROM property
-                  LEFT JOIN product_property ON property.id = product_property.property_id 
-                  WHERE type_ = :tag;";
-        $stmt = $pdo->prepare($query);
-        $stmt->bindParam(":tag", $tag);
-        $stmt->execute();
-        $tags_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Fetch linked tags for the product
-        $linkedTagsQuery = "SELECT name_ FROM property
-                            JOIN product_property ON property.id = product_property.property_id 
-                            WHERE product_property.product_id = :product_id AND type_ = :tag;";
-        $linkedTagsStmt = $pdo->prepare($linkedTagsQuery);
-        $linkedTagsStmt->bindParam(":product_id", $product_id);
-        $linkedTagsStmt->bindParam(":tag", $tag);
-        $linkedTagsStmt->execute();
-        $linkedTags = $linkedTagsStmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        foreach ($tags_result as $rs) { ?>
+        <?php if($tags) {
+            foreach ($tags as $tag){
+                $checked_tag = in_array($tag['id'], $selected_tags) ? 'checked': ''?>
             <label>
-                <input class="checkbox_property" type="checkbox" name="tags[]" value="<?= htmlspecialchars($rs['name_']) ?>" 
-                    <?= in_array($rs['name_'], $linkedTags) ? 'checked' : '' ?>>
-                <?= htmlspecialchars($rs['name_']) ?>
+                <input <?php echo $checked_tag ?> class="checkbox_property" type="checkbox" name="tags[]" value="<?=htmlspecialchars($tag['id']) ?>">
+                <?php echo htmlspecialchars($tag['name_']) ?>
             </label>
-        <?php } ?>
+           <?php }} ?>
         </div>
         </div>
             <div class="button_edit_add">

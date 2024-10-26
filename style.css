@@ -149,3 +149,8 @@
     justify-content: center;
 }
 
+.button_property{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}

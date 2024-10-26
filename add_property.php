@@ -164,7 +164,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                <label for="tag">Tag: </label>
                 <input id="tag" class="<?= $tagempty_field ?>" value="<?= $tag_err?>" name="tag" type="text" placeholder="Tag1, Tag2, ...">
             </div>
-            <div>
+            <div class="button_property">
                 <a class="ui button" href="index.php">
                     Back
                 </a>
