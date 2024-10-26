@@ -118,7 +118,7 @@ if(isset($_GET['product_id'])){
         if(!isValidInput($sku) && !empty($sku)){  $empty_sku = 'empty_field'; echo "sku don't allow special character <br>";}
         if(empty($sku)){  $empty_sku = 'empty_field'; echo 'Fill sku <br>';}
         if(!isValidInput($price) && !empty($price)){  $empty_price = 'empty_field'; echo "price don't allow special character <br>";}
-        if(empty($price)){  $empty_price = 'empty_field'; echo 'Fill price';}
+        if(empty($price)){  $empty_price = 'empty_field'; echo 'Fill price<br>';}
         if(!numbers_only($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
     } 
 
@@ -265,8 +265,101 @@ if(isset($_GET['product_id'])){
     $stmt->execute(['product_id' => $product_id]);
     $selected_categories = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-    }else {
+    }
+
+else 
+    {
         $name_button = 'Add Product';
+
+    if(isset($_POST['add'])){
+        $overallUploadOk = 1;
+        $product_name = test_input($_POST['product_name']);
+        $sku = test_input($_POST['sku']);
+        $price = test_input($_POST['price']);
+
+        if (isset($_FILES["singleFile"]) && $_FILES["singleFile"]["error"] == 0) {
+            $single_target_file = $target_dir . basename($_FILES["singleFile"]["name"]);
+            $single_imageFileType = strtolower(pathinfo($single_target_file, PATHINFO_EXTENSION));
+    
+            $check = getimagesize($_FILES["singleFile"]["tmp_name"]);
+            if ($check !== false) {
+                echo "Single file is an image - " . $check["mime"] . ".<br>";
+            } else {
+                echo "Single file is not an image.<br>";
+                $err_image = 'empty_field';
+                $overallUploadOk = 0;
+            }
+    
+            if ($_FILES["singleFile"]["size"] > 500000) {
+                echo "Sorry, single file is too large.<br>";
+                $err_image = 'empty_field';
+                $overallUploadOk = 0;
+            }
+    
+            if (!in_array($single_imageFileType, ["jpg", "jpeg", "png", "gif"])) {
+                echo "Sorry, only JPG, JPEG, PNG & GIF files are allowed for the single file.<br>";
+                $err_image = 'empty_field';
+                $overallUploadOk = 0;
+            }
+        } else {
+            $overallUploadOk = 0;
+         }
+
+         if ($overallUploadOk == 1) {
+    
+            if (move_uploaded_file(($_FILES["singleFile"]["tmp_name"]), $single_target_file) && !empty($product_name) && !empty($sku) 
+                && !empty($price) && isValidInput($product_name) && isValidInput($sku) && isValidInput($price) && numbers_only($price)) {
+                echo "The single file " . htmlspecialchars(basename($_FILES["singleFile"]["name"])) . " has been uploaded.<br>";
+    
+                $singleFileName = $_FILES["singleFile"]["name"];
+        
+                $sql = "INSERT INTO products (product_name, sku, price, featured_image, date) values (:product_name, :sku, :price, :featured_image, NOW())";
+                $stmt = $pdo->prepare($sql);
+                $stmt->bindParam(":product_name", $product_name);
+                $stmt->bindParam(":sku", $sku);
+                $stmt->bindParam(":price", $price);
+                $stmt->bindParam(":featured_image", $singleFileName);
+                $stmt->execute();
+                $product_name = $sku = $price = '';
+
+            }else {
+                echo "Sorry, there was an error uploading the single file.<br>";
+            }
+        }
+        // else if(!empty($product_name) && !empty($sku) && !empty($price) && isValidInput($product_name) 
+        // && isValidInput($sku) && isValidInput($price) && numbers_only($price) ){
+        //     $sql = "INSERT INTO products () product_name = :product_name, sku = :sku, price =:price, date = NOW() WHERE id = :id";
+        //     $stmt = $pdo->prepare($sql);
+        //     $stmt->bindParam(":product_name", $product_name);
+        //     $stmt->bindParam(":sku", $sku);
+        //     $stmt->bindParam(":price", $price);
+        //     $stmt->bindParam(":id", $product_id);
+        //     $stmt->execute();
+    
+        //     foreach ($_FILES['multipleFiles']['name'] as $key => $name) {
+        //         if (!$_FILES['multipleFiles']['error'][$key] == 0) {
+        //             if(isset($_FILES["singleFile"]) && !$_FILES["singleFile"]["error"] == 0 && isset($_FILES['multipleFiles']) && 
+        //              !$_FILES['multipleFiles']['error'] == 0 ){
+        //                 echo "update successfully";
+        //             }
+        //         }
+        //     }
+        // } 
+        else {
+            if(!isValidInput($product_name) && !empty($product_name)){  $empty_name = 'empty_field'; echo "product name don't allow special character <br>";}
+            if(empty($product_name)){$empty_name = 'empty_field'; echo 'Fill Product Name <br>  ';}
+            if(!isValidInput($sku) && !empty($sku)){  $empty_sku = 'empty_field'; echo "sku don't allow special character <br>";}
+            if(empty($sku)){  $empty_sku = 'empty_field'; echo 'Fill sku <br>';}
+            if(!isValidInput($price) && !empty($price)){  $empty_price = 'empty_field'; echo "price don't allow special character <br>";}
+            if(empty($price)){  $empty_price = 'empty_field'; echo 'Fill price<br>';}
+            if(!numbers_only($price)){  $empty_price = 'empty_field'; echo "price just allow number<br>";}
+            if(empty($singleFileName)){  $empty_singleFile = 'empty_field'; echo "Please upload image";}
+
+        } 
+    
+
+    }
+
 
     }
 
@@ -290,7 +383,7 @@ if(isset($_GET['product_id'])){
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $name ?></title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/style.css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
      <style>
@@ -318,7 +411,7 @@ if(isset($_GET['product_id'])){
                 <img height="50" src="./uploads/<?php echo $singleFileName; ?>">
             </div>
             <div class="ui input">
-                <input  height="50" class="<?= $err_image ?>" value="" name="singleFile" id="singleFile" type="file">
+                <input class="<?= $empty_singleFile?>" height="50" class="<?= $err_image ?>" value="" name="singleFile" id="singleFile" type="file">
             </div>
             <div class="images_box ui">
             <?php 

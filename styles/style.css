@@ -152,5 +152,14 @@
 .button_property{
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: space-around;
+}
+
+
+.container table tbody td .edit_button{
+    color: rgba(105, 105, 105, 0.747);
+}
+
+.container table tbody td .delete_button{
+    color: rgba(105, 105, 105, 0.747);
 }

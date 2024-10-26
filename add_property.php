@@ -139,7 +139,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Property</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/style.css" type="text/css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
     <!-- link semantic ui -->

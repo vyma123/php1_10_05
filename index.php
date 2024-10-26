@@ -13,13 +13,14 @@ $results = select_all_products($pdo);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/style.css" type="text/css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
-
+   
     <!-- link semantic ui -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css" integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <title>PHP1</title>
+   
 </head>
 
 <body>
@@ -108,11 +109,10 @@ $results = select_all_products($pdo);
       <td><?php echo htmlspecialchars($row['sku'])?></td>
       <td><?php echo htmlspecialchars($row['price'])?></td>
       <td>
-          <img width="100" src="./uploads/<?php echo $row['featured_image']; ?>">
+          <img height="50" src="./uploads/<?php echo $row['featured_image']; ?>">
 
       </td>
       <td>
-      <div class="">
             <?php 
             $query = "SELECT p.name_ FROM product_property pp
                     JOIN property p ON pp.property_id = p.id
@@ -124,14 +124,51 @@ $results = select_all_products($pdo);
             foreach ($galleryImages as $image) {?> 
 
             <img height="40" src="./uploads/<?= $image['name_'] ?>">
-
             <?php }?>
       </td>
-      <td>category1</td>
-      <td>tag1</td>
       <td>
-        <a href="edit_add.php?product_id=<?php echo $product_id  ?>">Edit</a>
-        <a href="delete.php">Delete</a>
+      <?php 
+            $query = "SELECT p.name_ FROM product_property pp
+                    JOIN property p ON pp.property_id = p.id
+                    WHERE pp.product_id = :product_id AND p.type_ = 'category'";
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(':product_id', $product_id, PDO::PARAM_INT);
+            $stmt->execute();
+            $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $totalCategories = count($categories);
+            foreach ($categories as $index => $category) {?> 
+            <span><?php echo htmlspecialchars($category['name_']);
+                    if($index < $totalCategories -1 ){
+                        echo ', ';
+                    }
+                   ?></span>
+            <?php }?>
+      </td>
+      <td>
+      <?php 
+            $query = "SELECT p.name_ FROM product_property pp
+                    JOIN property p ON pp.property_id = p.id
+                    WHERE pp.product_id = :product_id AND p.type_ = 'tag'";
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(':product_id', $product_id, PDO::PARAM_INT);
+            $stmt->execute();
+            $tags = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $totalTags = count($tags);
+            foreach ($tags as $index => $tag) {?> 
+            <span><?php echo htmlspecialchars($tag['name_']);
+                    if($index < $totalTags -1 ){
+                        echo ', ';
+                    }
+                   ?></span>
+            <?php }?>
+      </td>
+      <td>
+        <a class="edit_button" href="edit_add.php?product_id=<?php echo $product_id  ?>">
+        <i class="edit icon"></i>
+        </a>
+        <a class="delete_button" href="delete.php">
+        <i class="trash icon"></i>
+        </a>
 
       </td>
     </tr>
@@ -139,6 +176,7 @@ $results = select_all_products($pdo);
   </tbody>
 </table>
 </section>
+
 </body>
 
 </html>
