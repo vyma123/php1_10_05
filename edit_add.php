@@ -319,7 +319,6 @@ else
 
                 if (move_uploaded_file($imageTmpName, $targetFilePath)) {
                     $uploadedImages[] = $targetFilePath; // Add new image to the array
-                    echo "<p style='color: green;'>Image {$image['name']} uploaded successfully!</p>";
                 } else {
                     echo "<p style='color: red;'>Failed to upload image: {$image['name']}</p>";
                 }
@@ -338,11 +337,11 @@ else
                 foreach ($images['name'] as $key => $imageName) {
                     if ($images['error'][$key] === 0) {
                         $imageTmpName = $images['tmp_name'][$key];
-                        $targetFilePath = $uploadDir . '/' . basename($imageName);
+                        $targetFilePath2 = $uploadDir . '/' . basename($imageName);
         
                         // Save the new image to "uploads"
-                        if (move_uploaded_file($imageTmpName, $targetFilePath)) {
-                            $uploadedImages2[] = $targetFilePath; // Add new image to the array
+                        if (move_uploaded_file($imageTmpName, $targetFilePath2)) {
+                            $uploadedImages2[] = $targetFilePath2; // Add new image to the array
                             echo "<p style='color: green;'>Image {$imageName} uploaded successfully!</p>";
                         } else {
                             echo "<p style='color: red;'>Failed to upload image: {$imageName}</p>";
@@ -350,72 +349,116 @@ else
                     }
                 }
             }
-            
 
-           
+          
 
-           
 
-             
-        }
+            if(!empty($product_name) && !empty($targetFilePath) && !empty($sku) && !empty($price)
+            && isValidInput($product_name) 
+            && isValidInput($sku) && isValidInput($price) && numbers_only($price)){
+            echo 'added successfully';
+            try {
 
-        if(!empty($product_name && !empty($targetFilePath) && !empty($sku) && !empty($price)
-                    && isValidInput($product_name) 
-                    && isValidInput($sku) && isValidInput($price) && numbers_only($price))){
-                    echo 'added successfully';
-        try {
+                $imageFile1 =  htmlspecialchars(basename($targetFilePath));
 
-            $imageFile1 =  htmlspecialchars(basename($targetFilePath));
-
-            // Insert product details into the database using PDO
-            $stmt = $pdo->prepare("INSERT INTO products (product_name,sku, price, featured_image) 
-                                   VALUES (:product_name, :sku, :price, :featured_image)");
-            $stmt->bindParam(':product_name', $product_name);
-            $stmt->bindParam(':sku', $sku);
-            $stmt->bindParam(':price', $price);
-            $stmt->bindParam(':featured_image', $imageFile1); // Use the last uploaded image path
-
-            if ($stmt->execute()) {
-                echo "<p style='color: green;'>Product saved to database successfully!</p>";
-            } else {
-                echo "<p style='color: red;'>Failed to save product to database.</p>";
-            }
-            $product_name = $sku = $price ='';
-            $uploadedImages = [];
-        } catch (PDOException $e) {
-            echo "<p style='color: red;'>Database error: " . $e->getMessage() . "</p>";
-        }
-        }else if(!empty($uploadedImages) && !empty($product_name) && !empty($sku) && !empty($price)
-                && isValidInput($product_name) 
-                && isValidInput($sku) && isValidInput($price) && numbers_only($price)) {
-            
-                foreach ($uploadedImages as $image) {
-                    $imageFile =  htmlspecialchars(basename($image));
-                
+                // Insert product details into the database using PDO
                 $stmt = $pdo->prepare("INSERT INTO products (product_name,sku, price, featured_image) 
-                                       VALUES (:product_name, :sku, :price, :featured_image)");
+                                    VALUES (:product_name, :sku, :price, :featured_image)");
                 $stmt->bindParam(':product_name', $product_name);
                 $stmt->bindParam(':sku', $sku);
                 $stmt->bindParam(':price', $price);
-                $stmt->bindParam(':featured_image', $imageFile); 
+                $stmt->bindParam(':featured_image', $imageFile1); // Use the last uploaded image path
+
                 if ($stmt->execute()) {
-                    echo "<p style='color: green;'>Product saved to database successfully!</p>";
+                    echo "<p style='color: green;'>Product saved to database successfullysesefse!</p>";
                 } else {
                     echo "<p style='color: red;'>Failed to save product to database.</p>";
                 }
-                $uploadedImages = [];
-                $product_name = $sku = $price ='';
-                }
+                // $product_name = $sku = $price ='';
+                // $uploadedImages = [];
+            } catch (PDOException $e) {
+                echo "<p style='color: red;'>Database error: " . $e->getMessage() . "</p>";
+            }
+            }else if(!empty($uploadedImages) && !empty($product_name) && !empty($sku) && !empty($price)
+                    && isValidInput($product_name) 
+                    && isValidInput($sku) && isValidInput($price) && numbers_only($price)) {
+                
+                    foreach ($uploadedImages as $image) {
+                        $imageFile =  htmlspecialchars(basename($image));
+                    
+                    $stmt = $pdo->prepare("INSERT INTO products (product_name,sku, price, featured_image) 
+                                        VALUES (:product_name, :sku, :price, :featured_image)");
+                    $stmt->bindParam(':product_name', $product_name);
+                    $stmt->bindParam(':sku', $sku);
+                    $stmt->bindParam(':price', $price);
+                    $stmt->bindParam(':featured_image', $imageFile); 
+                    if ($stmt->execute()) {
+                        echo "<p style='color: green;'>Product saved to database successfullyyyyyy!</p>";
+                    } else {
+                        echo "<p style='color: red;'>Failed to save product to database.</p>";
+                    }
+                    // $uploadedImages = [];
+                    // $product_name = $sku = $price ='';
+                    }
+            }else {
+                if(!isValidInput($product_name) && !empty($product_name)){  $empty_name = 'empty_field'; echo "product name don't allow special character <br>";}
+                if(empty($product_name)){$empty_name = 'empty_field'; echo 'Fill Product Name <br>  ';}
+                if(!isValidInput($sku) && !empty($sku)){  $empty_sku = 'empty_field'; echo "sku don't allow special character <br>";}
+                if(empty($sku)){  $empty_sku = 'empty_field'; echo 'Fill sku <br>';}
+                if(!isValidInput($price) && !empty($price)){  $empty_price = 'empty_field'; echo "price don't allow special character <br>";}
+                if(empty($price)){  $empty_price = 'empty_field'; echo 'Fill price<br>';}
+                if(!numbers_only($price) && isValidInput($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
+                if(empty($uploadedImages)){  $empty_image = 'empty_field'; echo "please upload image";}
+
+            }
             
-        }else {
-            if(!isValidInput($product_name) && !empty($product_name)){  $empty_name = 'empty_field'; echo "product name don't allow special character <br>";}
-            if(empty($product_name)){$empty_name = 'empty_field'; echo 'Fill Product Name <br>  ';}
-            if(!isValidInput($sku) && !empty($sku)){  $empty_sku = 'empty_field'; echo "sku don't allow special character <br>";}
-            if(empty($sku)){  $empty_sku = 'empty_field'; echo 'Fill sku <br>';}
-            if(!isValidInput($price) && !empty($price)){  $empty_price = 'empty_field'; echo "price don't allow special character <br>";}
-            if(empty($price)){  $empty_price = 'empty_field'; echo 'Fill price<br>';}
-            if(!numbers_only($price) && isValidInput($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
+            
+            if ((!empty($product_name) && !empty($targetFilePath) && !empty($sku) && !empty($price)
+            && isValidInput($product_name) 
+            && isValidInput($sku) && isValidInput($price) && numbers_only($price)) ||(
+            !empty($uploadedImages) && !empty($product_name) && !empty($sku) && !empty($price)
+            && isValidInput($product_name) 
+            && isValidInput($sku) && isValidInput($price) && numbers_only($price))) {
+                try {
+                        $productId = $pdo->lastInsertId(); // Get the ID of the newly inserted product
+        
+                        // Insert uploaded images into the property table
+                        foreach ($uploadedImages2 as $uploadedImage) {
+                            // Prepare and insert image into property
+                            $imageFileName = htmlspecialchars(basename($uploadedImage));
+                            $propertyStmt = $pdo->prepare("INSERT INTO property (type_, name_) VALUES ('gallery', :name_)");
+                            $propertyStmt->bindParam(':name_', $imageFileName);
+                            $propertyStmt->execute();
+                            $propertyId = $pdo->lastInsertId(); // Get the ID of the inserted property
+        
+                            // Link the product and property in product_property table
+                            $linkStmt = $pdo->prepare("INSERT INTO product_property (product_id, property_id) VALUES (:product_id, :property_id)");
+                            $linkStmt->bindParam(':product_id', $productId);
+                            $linkStmt->bindParam(':property_id', $propertyId);
+                            $linkStmt->execute();
+
+                        }
+        
+                        echo "<p style='color: green;'>Product saved to database successfully!</p>";
+        
+                        // Clear uploaded images array after successful submission
+                        $uploadedImages2 = [];
+                        $uploadedImages = [];
+                        $targetFilePath = [];
+                        $targetFilePath2 = [];
+                        $product_name = $sku = $price ='';
+
+
+        
+                } catch (PDOException $e) {
+                    echo "<p style='color: red;'>Database error: " . $e->getMessage() . "</p>";
+                }
+            } else if (empty($name)) {
+                echo "<p style='color: red;'>ok</p>";
+            }
         }
+
+    
     }
 
     $query = "SELECT id, name_ FROM property WHERE type_ = 'tag'";
@@ -472,14 +515,13 @@ else
                         echo "<img src='" . htmlspecialchars($image) . "' height='50' alt='Uploaded Image'>";
                     }
                 }
-                    
                     ?>                  
             </div>
             <div class="ui input">
                 <?php if(isset($product_id)){ ?>
                 <input class="<?= $empty_singleFile?>" height="50" class="<?= $err_image ?>" value="" name="singleFile" id="singleFile" type="file">
                 <?php }else {?>
-                    <input type="file" name="imagefile">
+                    <input class="<?php echo $empty_image?>" type="file" name="imagefile">
                     <input type="hidden" name="uploadedImages" value='<?= htmlspecialchars(json_encode($uploadedImages)) ?>'>
                   <?php }  ?>
 
@@ -502,7 +544,6 @@ else
                             echo "<img src='" . htmlspecialchars($image) . "' height='50' alt='Uploaded Image'>";
                         }
                     }
-            
                  }?>
             </div>
             <div class="ui input">
@@ -553,7 +594,7 @@ else
                 <a class="ui button" href="index.php">
                     Back
                 </a>
-                <button type="submit" name="add" class="ui button">
+                <button  type="submit" name="add" class="ui button">
                     <?php echo $name_button?>
                 </button>
             </div>
