@@ -14,15 +14,15 @@ function add_property(object $pdo, string $type_, string $name) {
     $stmt->execute();
 }
 
-// function get_property(object $pdo, string $name_) {
-//     $query = "SELECT name_ FROM property WHERE name_ = :name_;";
-//     $stmt = $pdo->prepare($query);
-//     $stmt->bindParam(":name_", $name_);
-//     $stmt->execute();
-//     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-//     return $result;
-
-// }
+function deleteProductPropertyByType($pdo, $product_id, $type) {
+    $query = "DELETE pp FROM product_property pp
+              JOIN property p ON pp.property_id = p.id
+              WHERE pp.product_id = :product_id AND p.type_ = :type";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':product_id', $product_id);
+    $stmt->bindParam(':type', $type);
+    $stmt->execute();
+}
 
 function get_property(object $pdo, string $name_, string $type_) {
     $query = "SELECT name_ FROM property WHERE type_ = :type_ AND name_ = :name_;";

@@ -38,7 +38,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if(!isValidInput($category) && isValidInput($tag)){
            $cat_err =  $category;
            $tag_err =  $tag;
-
         }
 
         if(!isValidInput($tag) && isValidInput($category) ){

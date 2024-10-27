@@ -96,7 +96,6 @@ $results = select_all_products($pdo);
       <th>Categories</th>
       <th>Tags</th>
       <th>Action</th>
-
     </tr>
   </thead>
   <tbody>
@@ -169,7 +168,6 @@ $results = select_all_products($pdo);
         <a class="delete_button" href="delete.php">
         <i class="trash icon"></i>
         </a>
-
       </td>
     </tr>
     <?php }?>

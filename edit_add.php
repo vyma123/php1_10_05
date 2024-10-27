@@ -119,7 +119,7 @@ if(isset($_GET['product_id'])){
         if(empty($sku)){  $empty_sku = 'empty_field'; echo 'Fill sku <br>';}
         if(!isValidInput($price) && !empty($price)){  $empty_price = 'empty_field'; echo "price don't allow special character <br>";}
         if(empty($price)){  $empty_price = 'empty_field'; echo 'Fill price<br>';}
-        if(!numbers_only($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
+        if(!numbers_only($price) && isValidInput($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
     } 
 
       
@@ -271,96 +271,133 @@ else
     {
         $name_button = 'Add Product';
 
-    if(isset($_POST['add'])){
         $overallUploadOk = 1;
-        $product_name = test_input($_POST['product_name']);
-        $sku = test_input($_POST['sku']);
-        $price = test_input($_POST['price']);
 
-        if (isset($_FILES["singleFile"]) && $_FILES["singleFile"]["error"] == 0) {
-            $single_target_file = $target_dir . basename($_FILES["singleFile"]["name"]);
-            $single_imageFileType = strtolower(pathinfo($single_target_file, PATHINFO_EXTENSION));
-    
-            $check = getimagesize($_FILES["singleFile"]["tmp_name"]);
-            if ($check !== false) {
-                echo "Single file is an image - " . $check["mime"] . ".<br>";
-            } else {
-                echo "Single file is not an image.<br>";
-                $err_image = 'empty_field';
-                $overallUploadOk = 0;
-            }
-    
-            if ($_FILES["singleFile"]["size"] > 500000) {
-                echo "Sorry, single file is too large.<br>";
-                $err_image = 'empty_field';
-                $overallUploadOk = 0;
-            }
-    
-            if (!in_array($single_imageFileType, ["jpg", "jpeg", "png", "gif"])) {
-                echo "Sorry, only JPG, JPEG, PNG & GIF files are allowed for the single file.<br>";
-                $err_image = 'empty_field';
-                $overallUploadOk = 0;
-            }
-        } else {
-            $overallUploadOk = 0;
-         }
-
-         if ($overallUploadOk == 1) {
-    
-            if (move_uploaded_file(($_FILES["singleFile"]["tmp_name"]), $single_target_file) && !empty($product_name) && !empty($sku) 
-                && !empty($price) && isValidInput($product_name) && isValidInput($sku) && isValidInput($price) && numbers_only($price)) {
-                echo "The single file " . htmlspecialchars(basename($_FILES["singleFile"]["name"])) . " has been uploaded.<br>";
-    
-                $singleFileName = $_FILES["singleFile"]["name"];
-        
-                $sql = "INSERT INTO products (product_name, sku, price, featured_image, date) values (:product_name, :sku, :price, :featured_image, NOW())";
-                $stmt = $pdo->prepare($sql);
-                $stmt->bindParam(":product_name", $product_name);
-                $stmt->bindParam(":sku", $sku);
-                $stmt->bindParam(":price", $price);
-                $stmt->bindParam(":featured_image", $singleFileName);
-                $stmt->execute();
-                $product_name = $sku = $price = '';
-
-            }else {
-                echo "Sorry, there was an error uploading the single file.<br>";
-            }
+        $uploadDir = "uploads";
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
         }
-        // else if(!empty($product_name) && !empty($sku) && !empty($price) && isValidInput($product_name) 
-        // && isValidInput($sku) && isValidInput($price) && numbers_only($price) ){
-        //     $sql = "INSERT INTO products () product_name = :product_name, sku = :sku, price =:price, date = NOW() WHERE id = :id";
-        //     $stmt = $pdo->prepare($sql);
-        //     $stmt->bindParam(":product_name", $product_name);
-        //     $stmt->bindParam(":sku", $sku);
-        //     $stmt->bindParam(":price", $price);
-        //     $stmt->bindParam(":id", $product_id);
-        //     $stmt->execute();
-    
-        //     foreach ($_FILES['multipleFiles']['name'] as $key => $name) {
-        //         if (!$_FILES['multipleFiles']['error'][$key] == 0) {
-        //             if(isset($_FILES["singleFile"]) && !$_FILES["singleFile"]["error"] == 0 && isset($_FILES['multipleFiles']) && 
-        //              !$_FILES['multipleFiles']['error'] == 0 ){
-        //                 echo "update successfully";
-        //             }
-        //         }
-        //     }
-        // } 
-        else {
+        $uploadedImages = [];   
+
+        if (!empty($_POST['uploadedImages'])) {
+            $uploadedImages = json_decode($_POST['uploadedImages'], true);
+        }
+
+        if(isset($_POST['add'])){
+            $product_name = test_input($_POST['product_name']);
+            $sku = test_input($_POST['sku']);
+            $price = test_input($_POST['price']);
+            $image = $_FILES['imagefile'];
+
+
+            if (isset($_FILES["imagefile"]) && $_FILES["imagefile"]["error"] == 0) {
+                $single_target_file = $target_dir . basename($_FILES["imagefile"]["name"]);
+                $single_imageFileType = strtolower(pathinfo($single_target_file, PATHINFO_EXTENSION));
+        
+                $check = getimagesize($_FILES["imagefile"]["tmp_name"]);
+                if ($check !== false) {
+                    echo "Single file is an image - " . $check["mime"] . ".<br>";
+                } else {
+                    echo "Single file is not an image.<br>";
+                    $err_image = 'empty_field';
+                    $overallUploadOk = 0;
+                }
+        
+                if ($_FILES["imagefile"]["size"] > 500000) {
+                    echo "Sorry, single file is too large.<br>";
+                    $err_image = 'empty_field';
+                    $overallUploadOk = 0;
+                }
+        
+                if (!in_array($single_imageFileType, ["jpg", "jpeg", "png", "gif"])) {
+                    echo "Sorry, only JPG, JPEG, PNG & GIF files are allowed for the single file.<br>";
+                    $err_image = 'empty_field';
+                    $overallUploadOk = 0;
+                }
+            } else {
+                $overallUploadOk = 0;
+             }
+
+             if($overallUploadOk == 1 && !empty($image['name'])){
+                  $imageTmpName = $image['tmp_name'];
+                  $targetFilePath = $uploadDir . '/' . basename($image['name']);
+
+
+                foreach ($uploadedImages as $oldImage) {
+                    if (file_exists($oldImage)) {
+                        unlink($oldImage);
+                    }
+                }
+
+                $uploadedImages = []; 
+
+                if (move_uploaded_file($imageTmpName, $targetFilePath)) {
+                    $uploadedImages[] = $targetFilePath; // Add new image to the array
+                    echo "<p style='color: green;'>Image {$image['name']} uploaded successfully!</p>";
+                } else {
+                    echo "<p style='color: red;'>Failed to upload image: {$image['name']}</p>";
+                }
+
+             }
+        }
+
+        if(!empty($product_name && !empty($targetFilePath) && !empty($sku) && !empty($price)
+                    && isValidInput($product_name) 
+                    && isValidInput($sku) && isValidInput($price) && numbers_only($price))){
+                    echo 'added successfully';
+        try {
+
+            $imageFile1 =  htmlspecialchars(basename($targetFilePath));
+
+            // Insert product details into the database using PDO
+            $stmt = $pdo->prepare("INSERT INTO products (product_name,sku, price, featured_image) 
+                                   VALUES (:product_name, :sku, :price, :featured_image)");
+            $stmt->bindParam(':product_name', $product_name);
+            $stmt->bindParam(':sku', $sku);
+            $stmt->bindParam(':price', $price);
+            $stmt->bindParam(':featured_image', $imageFile1); // Use the last uploaded image path
+
+            if ($stmt->execute()) {
+                echo "<p style='color: green;'>Product saved to database successfully!</p>";
+            } else {
+                echo "<p style='color: red;'>Failed to save product to database.</p>";
+            }
+            $product_name = $sku = $price ='';
+            $uploadedImages = [];
+        } catch (PDOException $e) {
+            echo "<p style='color: red;'>Database error: " . $e->getMessage() . "</p>";
+        }
+        }else if(!empty($uploadedImages) && !empty($product_name) && !empty($sku) && !empty($price)
+                && isValidInput($product_name) 
+                && isValidInput($sku) && isValidInput($price) && numbers_only($price)) {
+            
+                foreach ($uploadedImages as $image) {
+                    $imageFile =  htmlspecialchars(basename($image));
+                
+                $stmt = $pdo->prepare("INSERT INTO products (product_name,sku, price, featured_image) 
+                                       VALUES (:product_name, :sku, :price, :featured_image)");
+                $stmt->bindParam(':product_name', $product_name);
+                $stmt->bindParam(':sku', $sku);
+                $stmt->bindParam(':price', $price);
+                $stmt->bindParam(':featured_image', $imageFile); 
+                if ($stmt->execute()) {
+                    echo "<p style='color: green;'>Product saved to database successfully!</p>";
+                } else {
+                    echo "<p style='color: red;'>Failed to save product to database.</p>";
+                }
+                $uploadedImages = [];
+                $product_name = $sku = $price ='';
+                }
+            
+        }else {
             if(!isValidInput($product_name) && !empty($product_name)){  $empty_name = 'empty_field'; echo "product name don't allow special character <br>";}
             if(empty($product_name)){$empty_name = 'empty_field'; echo 'Fill Product Name <br>  ';}
             if(!isValidInput($sku) && !empty($sku)){  $empty_sku = 'empty_field'; echo "sku don't allow special character <br>";}
             if(empty($sku)){  $empty_sku = 'empty_field'; echo 'Fill sku <br>';}
             if(!isValidInput($price) && !empty($price)){  $empty_price = 'empty_field'; echo "price don't allow special character <br>";}
             if(empty($price)){  $empty_price = 'empty_field'; echo 'Fill price<br>';}
-            if(!numbers_only($price)){  $empty_price = 'empty_field'; echo "price just allow number<br>";}
-            if(empty($singleFileName)){  $empty_singleFile = 'empty_field'; echo "Please upload image";}
-
-        } 
-    
-
-    }
-
-
+            if(!numbers_only($price) && isValidInput($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
+        }
     }
 
     $query = "SELECT id, name_ FROM property WHERE type_ = 'tag'";
@@ -408,10 +445,26 @@ else
                 <input class="<?php echo $empty_price ?>" value="<?php echo $price?>" name="price" type="text" placeholder="Price">
             </div>
             <div class="ui">
+                <?php if(isset($product_id)){?>
                 <img height="50" src="./uploads/<?php echo $singleFileName; ?>">
+                <?php }else{
+                    
+                    // Display the currently uploaded image
+                    foreach ($uploadedImages as $image) {
+                        echo "<img src='" . htmlspecialchars($image) . "' height='50' alt='Uploaded Image'>";
+                    }
+                }
+                    
+                    ?>                  
             </div>
             <div class="ui input">
+                <?php if(isset($product_id)){ ?>
                 <input class="<?= $empty_singleFile?>" height="50" class="<?= $err_image ?>" value="" name="singleFile" id="singleFile" type="file">
+                <?php }else {?>
+                    <input type="file" name="imagefile">
+                    <input type="hidden" name="uploadedImages" value='<?= htmlspecialchars(json_encode($uploadedImages)) ?>'>
+                  <?php }  ?>
+
             </div>
             <div class="images_box ui">
             <?php 
@@ -477,5 +530,3 @@ else
     </form>
 </body>
 </html>
-
-
