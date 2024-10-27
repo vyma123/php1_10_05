@@ -66,3 +66,104 @@ function numbers_only($value)
 {
     return preg_match('/^([0-9].*)$/', $value);
 }
+
+function handleUpload($file, $target_dir) {
+    global $overallUploadOk, $err_image; // Sử dụng biến toàn cục nếu cần
+
+    if (isset($file) && $file["error"] == 0) {
+        $target_file = $target_dir . basename($file["name"]);
+        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+
+        $check = getimagesize($file["tmp_name"]);
+        if ($check !== false) {
+            echo "File is an image - " . $check["mime"] . ".<br>";
+        } else {
+            echo "File is not an image.<br>";
+            $err_image = 'empty_field';
+            $overallUploadOk = 0;
+            return false;
+        }
+
+        if ($file["size"] > 500000) {
+            echo "Sorry, file is too large.<br>";
+            $err_image = 'empty_field';
+            $overallUploadOk = 0;
+            return false;
+        }
+
+        if (!in_array($imageFileType, ["jpg", "jpeg", "png", "gif"])) {
+            echo "Sorry, only JPG, JPEG, PNG & GIF files are allowed.<br>";
+            $err_image = 'empty_field';
+            $overallUploadOk = 0;
+            return false;
+        }
+
+        // Nếu tất cả các kiểm tra đều OK, trả về đường dẫn tệp đã tải lên
+        return $target_file;
+
+    } else {
+        $overallUploadOk = 0;
+        return false;
+    }
+}
+
+function handleMultipleUploads($files, $target_dir) {
+    global $overallUploadOk2, $err_image; // Use global variables if needed
+
+    $uploaded_files = []; // Store paths of successfully uploaded files
+    $failed_files = [];   // Store names of files that failed to upload
+
+    foreach ($files["name"] as $key => $name) {
+        if ($files["error"][$key] == 0) {
+            $target_file = $target_dir . basename($name);
+            $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+
+            // Check if the file is an actual image
+            $check = getimagesize($files["tmp_name"][$key]);
+            if ($check === false) {
+                $failed_files[] = $name . " (not an image)";
+                $err_image = 'empty_field';
+                $overallUploadOk2 = 0;
+                continue;
+            }
+
+            // Check file size
+            if ($files["size"][$key] > 500000) {
+                $failed_files[] = $name . " (file too large)";
+                $err_image = 'empty_field';
+                $overallUploadOk2 = 0;
+                continue;
+            }
+
+            // Allow only specific file formats
+            if (!in_array($imageFileType, ["jpg", "jpeg", "png", "gif"])) {
+                $failed_files[] = $name . " (invalid file format)";
+                $err_image = 'empty_field';
+                $overallUploadOk2 = 0;
+                continue;
+            }
+
+            // Move the file to the target directory
+            // if (move_uploaded_file($files["tmp_name"][$key], $target_file)) {
+            //     $uploaded_files[] = $name; // Store only the name of the file
+            // } else {
+            //     $failed_files[] = $name . " (upload error)";
+            //     $err_image = 'empty_field';
+            //     $overallUploadOk2 = 0;
+            // }
+        } else {
+            $overallUploadOk2 = 0;
+        }
+    }
+
+    // Print success and failure messages after all files are processed
+    if (!empty($uploaded_files)) {
+        echo "The following files have been uploaded: " . implode(", ", $uploaded_files) . "<br>";
+    }
+
+    if (!empty($failed_files)) {
+        echo "The following files could not be uploaded: " . implode(", ", $failed_files) . "<br>";
+    }
+
+    return $uploaded_files; // Return an array of successfully uploaded file paths
+}

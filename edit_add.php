@@ -272,56 +272,42 @@ else
         $name_button = 'Add Product';
 
         $overallUploadOk = 1;
+        $overallUploadOk2 = 1;
+
 
         $uploadDir = "uploads";
+
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }
         $uploadedImages = [];   
+        $uploadedImages2 = [];   
+
+
 
         if (!empty($_POST['uploadedImages'])) {
             $uploadedImages = json_decode($_POST['uploadedImages'], true);
         }
+        if (!empty($_POST['uploadedImages2'])) {
+            $uploadedImages2 = json_decode($_POST['uploadedImages2'], true);
+        }
+
+        
 
         if(isset($_POST['add'])){
             $product_name = test_input($_POST['product_name']);
             $sku = test_input($_POST['sku']);
             $price = test_input($_POST['price']);
             $image = $_FILES['imagefile'];
+            $images = $_FILES['imagefiles'];
 
-
-            if (isset($_FILES["imagefile"]) && $_FILES["imagefile"]["error"] == 0) {
-                $single_target_file = $target_dir . basename($_FILES["imagefile"]["name"]);
-                $single_imageFileType = strtolower(pathinfo($single_target_file, PATHINFO_EXTENSION));
-        
-                $check = getimagesize($_FILES["imagefile"]["tmp_name"]);
-                if ($check !== false) {
-                    echo "Single file is an image - " . $check["mime"] . ".<br>";
-                } else {
-                    echo "Single file is not an image.<br>";
-                    $err_image = 'empty_field';
-                    $overallUploadOk = 0;
-                }
-        
-                if ($_FILES["imagefile"]["size"] > 500000) {
-                    echo "Sorry, single file is too large.<br>";
-                    $err_image = 'empty_field';
-                    $overallUploadOk = 0;
-                }
-        
-                if (!in_array($single_imageFileType, ["jpg", "jpeg", "png", "gif"])) {
-                    echo "Sorry, only JPG, JPEG, PNG & GIF files are allowed for the single file.<br>";
-                    $err_image = 'empty_field';
-                    $overallUploadOk = 0;
-                }
-            } else {
-                $overallUploadOk = 0;
-             }
+            handleUpload($image, $target_dir);
+            handleMultipleUploads($images, $target_dir);
+          
 
              if($overallUploadOk == 1 && !empty($image['name'])){
                   $imageTmpName = $image['tmp_name'];
                   $targetFilePath = $uploadDir . '/' . basename($image['name']);
-
 
                 foreach ($uploadedImages as $oldImage) {
                     if (file_exists($oldImage)) {
@@ -337,8 +323,40 @@ else
                 } else {
                     echo "<p style='color: red;'>Failed to upload image: {$image['name']}</p>";
                 }
-
              }
+
+             if (!empty($images['name'][0])) {
+                // Clear previous images from the array and delete from the "uploads" directory
+                foreach ($uploadedImages2 as $oldImage) {
+                    if (file_exists($oldImage)) {
+                        unlink($oldImage);
+                    }
+                }
+                $uploadedImages2 = []; // Clear the array
+        
+                // Process each uploaded image
+                foreach ($images['name'] as $key => $imageName) {
+                    if ($images['error'][$key] === 0) {
+                        $imageTmpName = $images['tmp_name'][$key];
+                        $targetFilePath = $uploadDir . '/' . basename($imageName);
+        
+                        // Save the new image to "uploads"
+                        if (move_uploaded_file($imageTmpName, $targetFilePath)) {
+                            $uploadedImages2[] = $targetFilePath; // Add new image to the array
+                            echo "<p style='color: green;'>Image {$imageName} uploaded successfully!</p>";
+                        } else {
+                            echo "<p style='color: red;'>Failed to upload image: {$imageName}</p>";
+                        }
+                    }
+                }
+            }
+            
+
+           
+
+           
+
+             
         }
 
         if(!empty($product_name && !empty($targetFilePath) && !empty($sku) && !empty($price)
@@ -468,6 +486,7 @@ else
             </div>
             <div class="images_box ui">
             <?php 
+            if(isset($product_id)){
             $query = "SELECT p.name_ FROM product_property pp
                     JOIN property p ON pp.property_id = p.id
                     WHERE pp.product_id = :product_id AND p.type_ = 'gallery'";
@@ -477,10 +496,22 @@ else
             $galleryImages = $stmt->fetchAll(PDO::FETCH_ASSOC);
             foreach ($galleryImages as $image) {?> 
             <img  height="50" class="images"  src="./uploads/<?= $image['name_'] ?>">
-            <?php }?>
+            <?php }}else {
+                    if (!empty($uploadedImages2)) {
+                        foreach ($uploadedImages2 as $image) {
+                            echo "<img src='" . htmlspecialchars($image) . "' height='50' alt='Uploaded Image'>";
+                        }
+                    }
+            
+                 }?>
             </div>
             <div class="ui input">
+            <?php if(isset($product_id)){ ?>
                 <input  class="<?= $err_multiple_images?>" value="" name="multipleFiles[]" id="multipleFiles" multiple type="file">
+                <?php }else {?>
+                  <input type="file" name="imagefiles[]" multiple>
+                   <input type="hidden" name="uploadedImages2" value='<?= htmlspecialchars(json_encode($uploadedImages2)) ?>'>
+                    <?php }  ?>
             </div>
 
 
