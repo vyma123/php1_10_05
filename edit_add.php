@@ -197,9 +197,7 @@ if(isset($_GET['product_id'])){
         $stmt->execute(['product_id' => $product_id]);
     }
 
-    // Check if $selected_categories is not empty before executing the delete query
     if (!empty($selected_categories)) {
-        // Prepare the query to delete categories that are not selected
         $query = "DELETE pp FROM product_property pp
             JOIN property p ON pp.property_id = p.id
             WHERE pp.product_id = :product_id AND p.type_ = 'category'";
@@ -215,9 +213,7 @@ if(isset($_GET['product_id'])){
             $stmt->execute();
     }
 
-     // Check if $selected_categories is not empty before executing the delete query
      if (!empty($selected_tags) && !empty($product_name) && !empty($sku) && !empty($price)) {
-        // Prepare the query to delete categories that are not selected
         $query = "DELETE pp FROM product_property pp
             JOIN property p ON pp.property_id = p.id
             WHERE pp.product_id = :product_id AND p.type_ = 'tag'";
@@ -271,10 +267,7 @@ else
 
         $overallUploadOk = 1;
         $overallUploadOk2 = 1;
-
-
         $uploadDir = "uploads";
-
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }
@@ -302,7 +295,6 @@ else
             handleUpload($image, $target_dir);
             handleMultipleUploads($images, $target_dir);
           
-
              if($overallUploadOk == 1 && !empty($image['name'])){
                   $imageTmpName = $image['tmp_name'];
                   $targetFilePath = $uploadDir . '/' . basename($image['name']);
@@ -316,20 +308,20 @@ else
                 $uploadedImages = []; 
 
                 if (move_uploaded_file($imageTmpName, $targetFilePath)) {
-                    $uploadedImages[] = $targetFilePath; // Add new image to the array
+                    $uploadedImages[] = $targetFilePath; 
                 } else {
                     echo "<p style='color: red;'>Failed to upload image: {$image['name']}</p>";
                 }
              }
 
-             if (!empty($images['name'][0])) {
+             if (!empty($images['name'][0]) && $overallUploadOk2 == 1) {
                 // Clear previous images from the array and delete from the "uploads" directory
                 foreach ($uploadedImages2 as $oldImage) {
                     if (file_exists($oldImage)) {
                         unlink($oldImage);
                     }
                 }
-                $uploadedImages2 = []; // Clear the array
+                $uploadedImages2 = []; 
         
                 // Process each uploaded image
                 foreach ($images['name'] as $key => $imageName) {
@@ -339,8 +331,7 @@ else
         
                         // Save the new image to "uploads"
                         if (move_uploaded_file($imageTmpName, $targetFilePath2)) {
-                            $uploadedImages2[] = $targetFilePath2; // Add new image to the array
-                            echo "<p style='color: green;'>Image {$imageName} uploaded successfully!</p>";
+                            $uploadedImages2[] = $targetFilePath2; 
                         } else {
                             echo "<p style='color: red;'>Failed to upload image: {$imageName}</p>";
                         }
@@ -354,21 +345,19 @@ else
             if(!empty($product_name) && !empty($targetFilePath) && !empty($sku) && !empty($price)
             && isValidInput($product_name) 
             && isValidInput($sku) && isValidInput($price) && numbers_only($price)){
-            echo 'added successfully';
             try {
 
                 $imageFile1 =  htmlspecialchars(basename($targetFilePath));
 
-                // Insert product details into the database using PDO
                 $stmt = $pdo->prepare("INSERT INTO products (product_name,sku, price, featured_image) 
                                     VALUES (:product_name, :sku, :price, :featured_image)");
                 $stmt->bindParam(':product_name', $product_name);
                 $stmt->bindParam(':sku', $sku);
                 $stmt->bindParam(':price', $price);
-                $stmt->bindParam(':featured_image', $imageFile1); // Use the last uploaded image path
+                $stmt->bindParam(':featured_image', $imageFile1); 
 
                 if ($stmt->execute()) {
-                    echo "<p style='color: green;'>Product saved to database successfullysesefse!</p>";
+                    echo "<p style='color: green;'>Product saved to database successfully!</p>";
                 } else {
                     echo "<p style='color: red;'>Failed to save product to database.</p>";
                 }
@@ -392,7 +381,7 @@ else
                     $stmt->bindParam(':price', $price);
                     $stmt->bindParam(':featured_image', $imageFile); 
                     if ($stmt->execute()) {
-                        echo "<p style='color: green;'>Product saved to database successfullyyyyyy!</p>";
+                        echo "<p style='color: green;'>Product saved to database successfully!</p>";
                     } else {
                         echo "<p style='color: red;'>Failed to save product to database.</p>";
                     }
@@ -409,6 +398,7 @@ else
                 if(!numbers_only($price) && isValidInput($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
                 if(empty($uploadedImages)){  $empty_image = 'empty_field'; echo "please upload image";}
 
+
             }
             
             
@@ -419,18 +409,15 @@ else
             && isValidInput($product_name) 
             && isValidInput($sku) && isValidInput($price) && numbers_only($price))) {
                 try {
-                       $productId = $pdo->lastInsertId(); // Get the ID of the newly inserted product
+                       $productId = $pdo->lastInsertId(); 
         
-                        // Insert uploaded images into the property table
                         foreach ($uploadedImages2 as $uploadedImage) {
-                            // Prepare and insert image into property
                             $imageFileName = htmlspecialchars(basename($uploadedImage));
                             $propertyStmt = $pdo->prepare("INSERT INTO property (type_, name_) VALUES ('gallery', :name_)");
                             $propertyStmt->bindParam(':name_', $imageFileName);
                             $propertyStmt->execute();
-                            $propertyId = $pdo->lastInsertId(); // Get the ID of the inserted property
+                            $propertyId = $pdo->lastInsertId(); 
         
-                            // Link the product and property in product_property table
                             $linkStmt = $pdo->prepare("INSERT INTO product_property (product_id, property_id) VALUES (:product_id, :property_id)");
                             $linkStmt->bindParam(':product_id', $productId);
                             $linkStmt->bindParam(':property_id', $propertyId);
@@ -438,9 +425,7 @@ else
 
                         }
         
-                        echo "<p style='color: green;'>Product saved to database successfully!</p>";
         
-                        // Clear uploaded images array after successful submission
                         $uploadedImages2 = [];
                         $uploadedImages = [];
                         $targetFilePath = [];
@@ -452,16 +437,9 @@ else
                 } catch (PDOException $e) {
                     echo "<p style='color: red;'>Database error: " . $e->getMessage() . "</p>";
                 }
-            } else if (empty($name)) {
-                echo "<p style='color: red;'>ok</p>";
-            }
-
-
-
-
+            } 
            
             if (!empty($productId)) {
-                echo "ID của sản phẩm cuối cùng: " . $productId;
 
                 if(empty($checked_tag)){
                     $query = " DELETE product_property 
@@ -475,7 +453,6 @@ else
             
                 // Check if $selected_categories is not empty before executing the delete query
                 if (!empty($selected_categories)) {
-                    // Prepare the query to delete categories that are not selected
                     $query = "DELETE pp FROM product_property pp
                         JOIN property p ON pp.property_id = p.id
                         WHERE pp.product_id = :product_id AND p.type_ = 'category'";
@@ -493,7 +470,6 @@ else
             
                  // Check if $selected_categories is not empty before executing the delete query
                  if (!empty($selected_tags) && !empty($product_name) && !empty($sku) && !empty($price)) {
-                    // Prepare the query to delete categories that are not selected
                     $query = "DELETE pp FROM product_property pp
                         JOIN property p ON pp.property_id = p.id
                         WHERE pp.product_id = :product_id AND p.type_ = 'tag'";
@@ -551,6 +527,8 @@ else
     <title><?php echo $name ?></title>
 
     <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="styles/style2.css">
+
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
 
      <style>
@@ -578,8 +556,6 @@ else
                 <?php if(isset($product_id)){?>
                 <img height="50" src="./uploads/<?php echo $singleFileName; ?>">
                 <?php }else{
-                    
-                    // Display the currently uploaded image
                     foreach ($uploadedImages as $image) {
                         echo "<img src='" . htmlspecialchars($image) . "' height='50' alt='Uploaded Image'>";
                     }
@@ -619,7 +595,7 @@ else
             <?php if(isset($product_id)){ ?>
                 <input  class="<?= $err_multiple_images?>" value="" name="multipleFiles[]" id="multipleFiles" multiple type="file">
                 <?php }else {?>
-                  <input type="file" name="imagefiles[]" multiple>
+                  <input class="<?php echo $err_image2?>" type="file" name="imagefiles[]" multiple>
                    <input type="hidden" name="uploadedImages2" value='<?= htmlspecialchars(json_encode($uploadedImages2)) ?>'>
                     <?php }  ?>
             </div>

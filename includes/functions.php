@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 function isValidInput($input){
-    return preg_match('/^[\p{L}0-9 .,\-]+$/u', $input);
+    return preg_match('/^[\p{L}0-9 .,–\-]+$/u', $input);
 }
+
 
 function add_property(object $pdo, string $type_, string $name) {
     $query = "INSERT INTO property (type_, name_ ) VALUES (:type_, :name_);";
@@ -68,7 +69,7 @@ function numbers_only($value)
 }
 
 function handleUpload($file, $target_dir) {
-    global $overallUploadOk, $err_image; // Sử dụng biến toàn cục nếu cần
+    global $overallUploadOk, $err_image; 
 
     if (isset($file) && $file["error"] == 0) {
         $target_file = $target_dir . basename($file["name"]);
@@ -76,7 +77,7 @@ function handleUpload($file, $target_dir) {
 
         $check = getimagesize($file["tmp_name"]);
         if ($check !== false) {
-            echo "File is an image - " . $check["mime"] . ".<br>";
+            echo '';
         } else {
             echo "File is not an image.<br>";
             $err_image = 'empty_field';
@@ -108,55 +109,42 @@ function handleUpload($file, $target_dir) {
 }
 
 function handleMultipleUploads($files, $target_dir) {
-    global $overallUploadOk2, $err_image; // Use global variables if needed
+    global $overallUploadOk2, $err_image2; 
 
-    $uploaded_files = []; // Store paths of successfully uploaded files
-    $failed_files = [];   // Store names of files that failed to upload
+    $uploaded_files = []; 
+    $failed_files = [];   
 
     foreach ($files["name"] as $key => $name) {
         if ($files["error"][$key] == 0) {
             $target_file = $target_dir . basename($name);
             $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
 
-            // Check if the file is an actual image
             $check = getimagesize($files["tmp_name"][$key]);
             if ($check === false) {
                 $failed_files[] = $name . " (not an image)";
-                $err_image = 'empty_field';
+                $err_image2 = 'empty_field';
                 $overallUploadOk2 = 0;
                 continue;
             }
 
-            // Check file size
-            if ($files["size"][$key] > 500000) {
+            if ($files["size"][$key] > 1000000) {
                 $failed_files[] = $name . " (file too large)";
-                $err_image = 'empty_field';
+                $err_image2 = 'empty_field';
                 $overallUploadOk2 = 0;
                 continue;
             }
 
-            // Allow only specific file formats
             if (!in_array($imageFileType, ["jpg", "jpeg", "png", "gif"])) {
                 $failed_files[] = $name . " (invalid file format)";
-                $err_image = 'empty_field';
+                $err_image2 = 'empty_field';
                 $overallUploadOk2 = 0;
                 continue;
             }
-
-            // Move the file to the target directory
-            // if (move_uploaded_file($files["tmp_name"][$key], $target_file)) {
-            //     $uploaded_files[] = $name; // Store only the name of the file
-            // } else {
-            //     $failed_files[] = $name . " (upload error)";
-            //     $err_image = 'empty_field';
-            //     $overallUploadOk2 = 0;
-            // }
         } else {
             $overallUploadOk2 = 0;
         }
     }
 
-    // Print success and failure messages after all files are processed
     if (!empty($uploaded_files)) {
         echo "The following files have been uploaded: " . implode(", ", $uploaded_files) . "<br>";
     }

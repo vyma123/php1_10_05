@@ -1,0 +1,45 @@
+.container table tbody tr .product_name{
+    width: 200px;
+}
+
+.container table tbody tr .sku{
+    width: 200px ;
+}
+
+.container table tbody tr .gallery_images{
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    width: 250px;
+
+}
+
+.container table tbody tr .gallery_images::-webkit-scrollbar {
+    display: none; 
+}
+
+.container table thead tr .gallery_name {
+    width: 250px;
+
+}
+
+.container table tbody tr .gallery_images img{
+    
+    border: 1px solid rgba(145, 145, 145, 0.436);
+
+}
+
+.button_edit_add{
+    margin-top: 2rem;
+    gap: 4rem;
+}
+
+.container .pagination_box{
+    text-align: center;
+}
+
+.container .box_table{
+    height: 30rem;
+}

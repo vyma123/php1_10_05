@@ -4,6 +4,25 @@ require_once "includes/functions.php";
 
 // get all products 
 $results = select_all_products($pdo);
+
+$per_page_record = 3;
+$page = isset($_GET["page"]) ? (int)$_GET["page"] : 1;
+$start_from = ($page - 1) * $per_page_record;
+
+// Fetching products with pagination
+$query = "SELECT * FROM products LIMIT :start_from, :per_page";
+$stmt = $pdo->prepare($query);
+$stmt->bindParam(':start_from', $start_from, PDO::PARAM_INT);
+$stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
+$stmt->execute();
+$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Counting total records
+$count_query = "SELECT COUNT(*) FROM products";
+$count_stmt = $pdo->prepare($count_query);
+$count_stmt->execute();
+$total_records = $count_stmt->fetchColumn();
+
 ?>
 
 <!DOCTYPE html>
@@ -14,8 +33,10 @@ $results = select_all_products($pdo);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="styles/style.css" type="text/css">
+    <link rel="stylesheet" href="styles/style2.css" type="text/css">
+
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
-   
+    
     <!-- link semantic ui -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css" integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -47,13 +68,13 @@ $results = select_all_products($pdo);
             </div>
             <div class="product_header_bottom">
                 <select class="ui dropdown">
-                    <option value="0">Date</option>
-                    <option value="1">Product name</option>
-                    <option value="2">Price</option>
+                    <option value="date">Date</option>
+                    <option value="product_name">Product name</option>
+                    <option value="price">Price</option>
                 </select>
                 <select class="ui dropdown">
-                    <option value="0">ASC</option>
-                    <option value="1">DESC</option>
+                    <option value="ASC">ASC</option>
+                    <option value="DESC">DESC</option>
                 </select>
 
                 <select class="ui dropdown">
@@ -76,13 +97,15 @@ $results = select_all_products($pdo);
                 <div class="ui input">
                     <input type="text" id="price_to" name="price_to" placeholder="price to">
                 </div>
-                <button class="ui button">
+                <button type="submit" class="ui button">
                     Filter
                 </button>
             </div>
         </div>
 
         <!-- table -->
+         <div class="box_table">
+
     <table class="ui compact celled table">
   <thead>
     <tr>
@@ -92,7 +115,7 @@ $results = select_all_products($pdo);
       <th>Price</th>
       <th>Feature Image</th>
       <th>Gallery</th>
-      <th>Categories</th>
+      <th class="gallery_name">Categories</th>
       <th>Tags</th>
       <th>Action</th>
     </tr>
@@ -103,14 +126,14 @@ $results = select_all_products($pdo);
           ?>
           <tr>
       <td><?php echo htmlspecialchars($row['date'])?></td>
-      <td><?php echo htmlspecialchars($row['product_name'])?></td>
-      <td><?php echo htmlspecialchars($row['sku'])?></td>
+      <td class="product_name"><?php echo htmlspecialchars($row['product_name'])?></td>
+      <td class="sku"><?php echo htmlspecialchars($row['sku'])?></td>
       <td><?php echo htmlspecialchars($row['price'])?></td>
       <td>
-          <img height="50" src="./uploads/<?php echo $row['featured_image']; ?>">
+          <img height="30" src="./uploads/<?php echo $row['featured_image']; ?>">
 
       </td>
-      <td>
+      <td class="gallery_images">
             <?php 
             $query = "SELECT p.name_ FROM product_property pp
                     JOIN property p ON pp.property_id = p.id
@@ -172,6 +195,45 @@ $results = select_all_products($pdo);
     <?php }?>
   </tbody>
 </table>
+</div>
+
+
+
+
+<div class="pagination_box">
+
+<div class="ui pagination menu">
+                <?php
+                echo "</br>";
+                // Number of pages required.
+                $total_pages = ceil($total_records / $per_page_record);
+                $pagLink = "";
+
+                if ($page >= 2) {
+                    echo "<a class='item' href='index.php?page=" . ($page - 1) . "'> Prev </a>";
+                }else {
+                    echo "<a class='item' href='index.php?page=" . $page . "'> Prev </a>";
+
+                }
+
+                for ($i = 1; $i <= $total_pages; $i++) {
+                    if ($i == $page) {
+                        $pagLink .= "<a class='item active'  href='index.php?page=" . $i . "'>" . $i . " </a>";
+                    } else {
+                        $pagLink .= "<a class='item' href='index.php?page=" . $i . "'>" . $i . " </a>";
+                    }
+                }
+                echo $pagLink;
+
+                if ($page < $total_pages) {
+                    echo "<a class='item' href='index.php?page=" . ($page + 1) . "'> Next </a>";
+                }else {
+                    echo "<a class='item' href='index.php?page=" . $page . "'> Next </a>";
+
+                }
+                ?>
+            </div>
+</div>
 </section>
 
 </body>
