@@ -8,7 +8,11 @@ $results = select_all_products($pdo);
 
 $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
 $per_page_record = 3;
-$page = isset($_GET["page"]) ? (int)$_GET["page"] : 1;
+$page = isset($_GET["page"]) ? $_GET["page"] : 1;
+$page = filter_var($page, FILTER_VALIDATE_INT) !== false ? (int)$page : 1;
+
+
+
 $start_from = ($page - 1) * $per_page_record;
 
 // Fetching products with pagination
@@ -285,7 +289,9 @@ $total_records = $count_stmt->fetchColumn();
     </tr>
   </thead>
   <tbody>
+    
   <?php if (count($results) > 0) {
+    
       foreach ($results as $row){
         $product_id = $row['id'];
           ?>
@@ -380,7 +386,8 @@ $total_records = $count_stmt->fetchColumn();
                 $total_pages = ceil($total_records / $per_page_record);
 
                 
-                $pagLink = "";
+                    $pagLink = "";
+                   
 
                 if ($page >= 2) {
                     echo "<a class='item' href='index.php?page=" . ($page - 1) . 
