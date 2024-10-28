@@ -155,3 +155,5 @@ function handleMultipleUploads($files, $target_dir) {
 
     return $uploaded_files; // Return an array of successfully uploaded file paths
 }
+
+

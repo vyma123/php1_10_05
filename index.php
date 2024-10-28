@@ -5,6 +5,8 @@ require_once "includes/functions.php";
 // get all products 
 $results = select_all_products($pdo);
 
+
+$searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
 $per_page_record = 3;
 $page = isset($_GET["page"]) ? (int)$_GET["page"] : 1;
 $start_from = ($page - 1) * $per_page_record;
@@ -22,6 +24,118 @@ $count_query = "SELECT COUNT(*) FROM products";
 $count_stmt = $pdo->prepare($count_query);
 $count_stmt->execute();
 $total_records = $count_stmt->fetchColumn();
+
+
+//search
+$query = "SELECT * FROM products WHERE product_name LIKE :search_term LIMIT :start_from, :per_page";
+$stmt = $pdo->prepare($query);
+$searchTermLike = "%$searchTerm%";
+$stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+$stmt->bindParam(':start_from', $start_from, PDO::PARAM_INT);
+$stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
+$stmt->execute();
+$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
+$count_stmt = $pdo->prepare($count_query);
+$count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+$count_stmt->execute();
+$total_records = $count_stmt->fetchColumn();
+
+
+//filter
+$sort_by = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'date';
+$order = isset($_GET['order']) ? $_GET['order'] : 'ASC';
+$category = $_GET['category'] ?? 0;
+$tag = $_GET['tag'] ?? 0;
+$date_from = $_GET['date_from'] ?? null;
+$date_to = $_GET['date_to'] ?? null;
+$price_from = $_GET['price_from'] ?? null;
+$price_to = $_GET['price_to'] ?? null;
+
+$query = "
+SELECT products.*, 
+       GROUP_CONCAT(DISTINCT p_tags.name_ SEPARATOR ', ') AS tags, 
+       GROUP_CONCAT(DISTINCT p_categories.name_ SEPARATOR ', ') AS categories
+FROM products
+LEFT JOIN product_property pp_tags ON products.id = pp_tags.product_id
+LEFT JOIN property p_tags ON pp_tags.property_id = p_tags.id AND p_tags.type_ = 'tag'
+LEFT JOIN product_property pp_categories ON products.id = pp_categories.product_id
+LEFT JOIN property p_categories ON pp_categories.property_id = p_categories.id AND p_categories.type_ = 'category'
+WHERE products.product_name LIKE :search_term
+";
+
+if ($category != 0) {
+    $query .= " AND pp_categories.property_id = :category_id";
+}
+
+// Filter by tag if specified
+if ($tag != 0) {
+    $query .= " AND pp_tags.property_id = :tag_id";
+}
+
+// Optional filters for date and price (if you want to include them)
+if (!empty($date_from)) {
+    $query .= " AND products.date >= :date_from"; // Assuming there's a 'created_at' column
+}
+
+if (!empty($date_to)) {
+    $query .= " AND products.date <= :date_to"; // Assuming there's a 'created_at' column
+}
+
+if (!empty($price_from)) {
+    $query .= " AND products.price >= :price_from"; // Assuming there's a 'price' column
+}
+
+if (!empty($price_to)) {
+    $query .= " AND products.price <= :price_to"; // Assuming there's a 'price' column
+}
+$query .= " GROUP BY products.id 
+            ORDER BY $sort_by $order 
+            LIMIT :start_from, :per_page";
+$stmt = $pdo->prepare($query);
+
+$searchTermLike = "%$searchTerm%";
+$stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+if ($category != 0) {
+    $stmt->bindParam(':category_id', $category, PDO::PARAM_INT);
+}
+
+if ($tag != 0) {
+    $stmt->bindParam(':tag_id', $tag, PDO::PARAM_INT);
+}
+
+if (!empty($date_from)) {
+    $stmt->bindParam(':date_from', $date_from);
+}
+
+if (!empty($date_to)) {
+    $stmt->bindParam(':date_to', $date_to);
+}
+
+if (!empty($price_from)) {
+    $stmt->bindParam(':price_from', $price_from);
+}
+
+if (!empty($price_to)) {
+    $stmt->bindParam(':price_to', $price_to);
+}
+
+$stmt->bindParam(':start_from', $start_from, PDO::PARAM_INT);
+$stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
+$stmt->execute();
+$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+// Counting total records
+$count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
+$count_stmt = $pdo->prepare($count_query);
+$count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+$count_stmt->execute();
+$total_records = $count_stmt->fetchColumn();
+
+
+
 
 ?>
 
@@ -46,44 +160,73 @@ $total_records = $count_stmt->fetchColumn();
 <body>
     <section class="container">
         <h1>PHP1</h1>
+        <form method="GET" action="index.php">
+
         <div class="product_header">
             <div class="product_header_top">
                 <div>
                     <a href="edit_add.php" class="ui primary button">
                         Add product
-                    </button>
-                    <a href="add_property.php">
-                        <button  class="ui button">
-                            Add property
-                        </button>
                     </a>
-                    <button class="ui button">
+                    <a href="add_property.php" class="ui button">
+                            Add property
+                    </a>
+                    <a href="#" class="ui button">
                         Sync from VillaTheme
-                    </button>
+                    </a>
                 </div>
                 <div class="ui icon input">
-                    <input type="text" placeholder="Search product...">
-                    <i class="inverted circular search link icon"></i>
+                    <input name="search" type="text" placeholder="Search product..."  value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
+                    <i class="inverted circular search link icon" onclick="this.closest('form').submit()"></i>
                 </div>
             </div>
             <div class="product_header_bottom">
-                <select class="ui dropdown">
-                    <option value="date">Date</option>
-                    <option value="product_name">Product name</option>
-                    <option value="price">Price</option>
+                <select class="ui dropdown" name="sort_by" id="sort_by">
+                    <option value="date" <?php if ($sort_by === 'date') echo 'selected'; ?>>Date</option>
+                    <option value="product_name" <?php if ($sort_by === 'product_name') echo 'selected'; ?>>Product name</option>
+                    <option value="price" <?php if ($sort_by === 'price') echo 'selected'; ?>>Price</option>
                 </select>
-                <select class="ui dropdown">
-                    <option value="ASC">ASC</option>
-                    <option value="DESC">DESC</option>
+                <select class="ui dropdown" name="order">
+                    <option value="ASC" <?php if ($order === 'ASC') echo 'selected'; ?>>ASC</option>
+                    <option value="DESC" <?php if ($order === 'DESC') echo 'selected'; ?>>DESC</option>
                 </select>
 
-                <select class="ui dropdown">
+                <select class="ui dropdown" name="category">
                     <option value="0">Category</option>
-                    <option value="1">category1</option>
+                    <?php
+                     $query = "SELECT p.id, p.name_ FROM property p WHERE p.type_ = 'category'";
+                     $stmt = $pdo->prepare($query);
+                     $stmt->execute();
+                     $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                     $selectedCategory = $_GET['category'];
+
+                     foreach ($categories as $category) {
+                        $selected = ($category['id'] == $selectedCategory) ? 'selected' : '';
+                         echo "<option $selected value=\"{$category['id']}\">" . htmlspecialchars($category['name_']) . "</option>";
+                     }
+                    ?>
                 </select>
-                <select class="ui dropdown">
+
+                <select class="ui dropdown" name="tag">
                     <option value="0">Select Tag</option>
-                    <option value="1">tag1</option>
+                    <?php
+                // Fetch tags from the database
+                $query = "SELECT p.id, p.name_ FROM property p WHERE p.type_ = 'tag'";
+                $stmt = $pdo->prepare($query);
+                $stmt->execute();
+                $tags = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Get the selected tag from the query parameters
+                $selectedTag = $_GET['tag'] ?? 0; // Default to 0 if not set
+
+                // Loop through the tags and create the options
+                foreach ($tags as $tag) {
+                    // Check if the current tag ID is equal to the selected tag
+                    $selected = ($tag['id'] == $selectedTag) ? 'selected' : '';
+
+                    echo "<option $selected value=\"{$tag['id']}\">" . htmlspecialchars($tag['name_']) . "</option>";
+                }
+                ?>
                 </select>
                 <div class="ui input">
                     <input type="date" id="date_from" name="date_from">
@@ -102,6 +245,7 @@ $total_records = $count_stmt->fetchColumn();
                 </button>
             </div>
         </div>
+        </form>
 
         <!-- table -->
          <div class="box_table">
@@ -121,7 +265,8 @@ $total_records = $count_stmt->fetchColumn();
     </tr>
   </thead>
   <tbody>
-      <?php foreach ($results as $row){
+  <?php if (count($results) > 0) {
+      foreach ($results as $row){
         $product_id = $row['id'];
           ?>
           <tr>
@@ -192,7 +337,13 @@ $total_records = $count_stmt->fetchColumn();
         </a>
       </td>
     </tr>
-    <?php }?>
+    <?php }}else {?>
+        <tr>
+            <td colspan="9" style="text-align: center;">Product not found</td>
+        </tr>
+
+
+        <?php }?>
   </tbody>
 </table>
 </div>
@@ -213,7 +364,6 @@ $total_records = $count_stmt->fetchColumn();
                     echo "<a class='item' href='index.php?page=" . ($page - 1) . "'> Prev </a>";
                 }else {
                     echo "<a class='item' href='index.php?page=" . $page . "'> Prev </a>";
-
                 }
 
                 for ($i = 1; $i <= $total_pages; $i++) {
