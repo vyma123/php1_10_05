@@ -20,10 +20,10 @@ $stmt->execute();
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Counting total records
-$count_query = "SELECT COUNT(*) FROM products";
-$count_stmt = $pdo->prepare($count_query);
-$count_stmt->execute();
-$total_records = $count_stmt->fetchColumn();
+// $count_query = "SELECT COUNT(*) FROM products";
+// $count_stmt = $pdo->prepare($count_query);
+// $count_stmt->execute();
+// $total_records = $count_stmt->fetchColumn();
 
 
 //search
@@ -36,17 +36,20 @@ $stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
 $stmt->execute();
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
-$count_stmt = $pdo->prepare($count_query);
-$count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
-$count_stmt->execute();
-$total_records = $count_stmt->fetchColumn();
+// $count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
+// $count_stmt = $pdo->prepare($count_query);
+// $count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+// $count_stmt->execute();
+// $total_records = $count_stmt->fetchColumn();
 
 
 //filter
-$sort_by = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'date';
-$order = isset($_GET['order']) ? $_GET['order'] : 'ASC';
+$allowed_sort_columns = ['date', 'product_name', 'price'];
+$sort_by = isset($_GET['sort_by']) && in_array($_GET['sort_by'], $allowed_sort_columns) ? $_GET['sort_by'] : 'date';
+$allowed_order_directions = ['ASC', 'DESC'];
+$order = isset($_GET['order']) && in_array($_GET['order'], $allowed_order_directions) ? $_GET['order'] : 'ASC';
 $category = $_GET['category'] ?? 0;
+$cc = $_GET['category'] ?? 0;
 $tag = $_GET['tag'] ?? 0;
 $date_from = $_GET['date_from'] ?? null;
 $date_to = $_GET['date_to'] ?? null;
@@ -99,6 +102,7 @@ $searchTermLike = "%$searchTerm%";
 $stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
 if ($category != 0) {
     $stmt->bindParam(':category_id', $category, PDO::PARAM_INT);
+    $cc = $category;
 }
 
 if ($tag != 0) {
@@ -128,15 +132,30 @@ $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 // Counting total records
+if(!empty($cc)){
+    echo $cc;
+
+    // $count_query = "SELECT COUNT(*) FROM products lef WHERE product_name LIKE :search_term";
+    $count_query = "
+SELECT COUNT(DISTINCT products.id) 
+FROM products
+JOIN product_property ON products.id = product_property.product_id
+WHERE product_property.property_id = :property_id and product_name LIKE :search_term";
+
+$count_stmt = $pdo->prepare($count_query);
+$count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+$count_stmt->bindParam(':property_id', $category, PDO::PARAM_INT);
+
+$count_stmt->execute();
+$total_records = $count_stmt->fetchColumn();
+
+}else{
 $count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
 $count_stmt = $pdo->prepare($count_query);
 $count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
 $count_stmt->execute();
 $total_records = $count_stmt->fetchColumn();
-
-
-
-
+}
 ?>
 
 <!DOCTYPE html>
@@ -193,8 +212,9 @@ $total_records = $count_stmt->fetchColumn();
 
                 <select class="ui dropdown" name="category">
                     <option value="0">Category</option>
+
                     <?php
-                     $query = "SELECT p.id, p.name_ FROM property p WHERE p.type_ = 'category'";
+                     $query = "SELECT p.id, p.name_ FROM property p WHERE p.type_ = 'category' ";
                      $stmt = $pdo->prepare($query);
                      $stmt->execute();
                      $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -358,30 +378,63 @@ $total_records = $count_stmt->fetchColumn();
                 echo "</br>";
                 // Number of pages required.
                 $total_pages = ceil($total_records / $per_page_record);
+
+                
                 $pagLink = "";
 
                 if ($page >= 2) {
-                    echo "<a class='item' href='index.php?page=" . ($page - 1) . "'> Prev </a>";
+                    echo "<a class='item' href='index.php?page=" . ($page - 1) . 
+                    "&search=" . urlencode($searchTerm) . 
+                    "&sort_by=" . htmlspecialchars($sort_by) . 
+                    "&order=" . htmlspecialchars($order) .
+                    "&category=".htmlspecialchars($cc)."'> Prev </a>";
                 }else {
-                    echo "<a class='item' href='index.php?page=" . $page . "'> Prev </a>";
+                    echo "<a class='item' href='index.php?page=" . $page . 
+                    "&search=" . urlencode($searchTerm) . 
+                    "&sort_by=" . htmlspecialchars($sort_by) . 
+                    "&order=" . htmlspecialchars($order) . 
+                    "&category=".htmlspecialchars($cc)."'> Prev </a>";
                 }
 
                 for ($i = 1; $i <= $total_pages; $i++) {
                     if ($i == $page) {
-                        $pagLink .= "<a class='item active'  href='index.php?page=" . $i . "'>" . $i . " </a>";
+                    $pagLink .= "<a class='item active'  href='index.php?page=" . $i . 
+                    "&search=" . urlencode($searchTerm) . 
+                    "&sort_by=" . htmlspecialchars($sort_by) . 
+                    "&order=" . htmlspecialchars($order) .
+                    "&category=".htmlspecialchars($cc)."'>" . $i . " </a>";
                     } else {
-                        $pagLink .= "<a class='item' href='index.php?page=" . $i . "'>" . $i . " </a>";
+                    $pagLink .= "<a class='item' href='index.php?page=" . $i . 
+                    "&search=" . urlencode($searchTerm) . 
+                    "&sort_by=" . htmlspecialchars($sort_by) . 
+                    "&order=" . htmlspecialchars($order) .
+                    "&category=".htmlspecialchars($cc)."'>" . $i . " </a>";
                     }
                 }
                 echo $pagLink;
 
                 if ($page < $total_pages) {
-                    echo "<a class='item' href='index.php?page=" . ($page + 1) . "'> Next </a>";
+                    
+                    echo "<a class='item' href='index.php?page=" . ($page + 1) . 
+                    "&search=" . urlencode($searchTerm) . 
+                    "&sort_by=" . htmlspecialchars($sort_by) . 
+                    "&order=" . htmlspecialchars($order) .
+                    "&category=".htmlspecialchars($cc)."'> Next </a>";
+
+
+
                 }else {
-                    echo "<a class='item' href='index.php?page=" . $page . "'> Next </a>";
+                    echo "<a class='item' href='index.php?page=" . $page . 
+                    "&search=" . urlencode($searchTerm) . 
+                    "&sort_by=" . htmlspecialchars($sort_by) . 
+                    "&order=" . htmlspecialchars($order) .
+                    "&category=".htmlspecialchars($cc)."'> Next </a>";
 
                 }
+               
                 ?>
+
+                
             </div>
 </div>
 </section>
