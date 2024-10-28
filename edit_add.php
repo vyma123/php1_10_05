@@ -8,8 +8,8 @@ $uploadOk = 1;
 $product_name = $sku = $price = $name = '';
 $selected_tags = isset($_POST['tags']) ? $_POST['tags'] : [];
 $selected_categories = isset($_POST['categories']) ? $_POST['categories'] : [];
-
-
+$execute_success = '';
+$productId = null; 
 
 if(isset($_GET['product_id'])){
 
@@ -216,7 +216,7 @@ if(isset($_GET['product_id'])){
     }
 
      // Check if $selected_categories is not empty before executing the delete query
-     if (!empty($selected_tags)) {
+     if (!empty($selected_tags) && !empty($product_name) && !empty($sku) && !empty($price)) {
         // Prepare the query to delete categories that are not selected
         $query = "DELETE pp FROM product_property pp
             JOIN property p ON pp.property_id = p.id
@@ -232,8 +232,6 @@ if(isset($_GET['product_id'])){
         $stmt->bindParam(':product_id', $product_id);
         $stmt->execute();
     }
-
-
 
         $query = "INSERT INTO product_property (product_id, property_id) VALUES (:product_id, :property_id)";
         $stmt = $pdo->prepare($query);
@@ -374,8 +372,9 @@ else
                 } else {
                     echo "<p style='color: red;'>Failed to save product to database.</p>";
                 }
-                // $product_name = $sku = $price ='';
-                // $uploadedImages = [];
+                $execute_success = 'successfully';
+
+               
             } catch (PDOException $e) {
                 echo "<p style='color: red;'>Database error: " . $e->getMessage() . "</p>";
             }
@@ -397,8 +396,8 @@ else
                     } else {
                         echo "<p style='color: red;'>Failed to save product to database.</p>";
                     }
-                    // $uploadedImages = [];
-                    // $product_name = $sku = $price ='';
+                    $execute_success = 'successfully';
+
                     }
             }else {
                 if(!isValidInput($product_name) && !empty($product_name)){  $empty_name = 'empty_field'; echo "product name don't allow special character <br>";}
@@ -420,7 +419,7 @@ else
             && isValidInput($product_name) 
             && isValidInput($sku) && isValidInput($price) && numbers_only($price))) {
                 try {
-                        $productId = $pdo->lastInsertId(); // Get the ID of the newly inserted product
+                       $productId = $pdo->lastInsertId(); // Get the ID of the newly inserted product
         
                         // Insert uploaded images into the property table
                         foreach ($uploadedImages2 as $uploadedImage) {
@@ -456,9 +455,79 @@ else
             } else if (empty($name)) {
                 echo "<p style='color: red;'>ok</p>";
             }
-        }
 
-    
+
+
+
+           
+            if (!empty($productId)) {
+                echo "ID của sản phẩm cuối cùng: " . $productId;
+
+                if(empty($checked_tag)){
+                    $query = " DELETE product_property 
+                    FROM product_property 
+                    JOIN property ON product_property.property_id = property.id 
+                    WHERE product_property.product_id = :product_id 
+                    AND property.type_ = 'tag'";
+                    $stmt = $pdo->prepare($query);
+                    $stmt->execute(['product_id' => $productId]);
+                }
+            
+                // Check if $selected_categories is not empty before executing the delete query
+                if (!empty($selected_categories)) {
+                    // Prepare the query to delete categories that are not selected
+                    $query = "DELETE pp FROM product_property pp
+                        JOIN property p ON pp.property_id = p.id
+                        WHERE pp.product_id = :product_id AND p.type_ = 'category'";
+                    $stmt = $pdo->prepare($query);
+                    $stmt->bindParam(':product_id', $productId);
+                    $stmt->execute();
+                } else {
+                    $query = "DELETE pp FROM product_property pp
+                        JOIN property p ON pp.property_id = p.id
+                        WHERE pp.product_id = :product_id AND p.type_ = 'category'";
+                        $stmt = $pdo->prepare($query);
+                        $stmt->bindParam(':product_id', $productId);
+                        $stmt->execute();
+                }
+            
+                 // Check if $selected_categories is not empty before executing the delete query
+                 if (!empty($selected_tags) && !empty($product_name) && !empty($sku) && !empty($price)) {
+                    // Prepare the query to delete categories that are not selected
+                    $query = "DELETE pp FROM product_property pp
+                        JOIN property p ON pp.property_id = p.id
+                        WHERE pp.product_id = :product_id AND p.type_ = 'tag'";
+                    $stmt = $pdo->prepare($query);
+                    $stmt->bindParam(':product_id', $productId);
+                    $stmt->execute();
+                } else {
+                    $query = "DELETE pp FROM product_property pp
+                    JOIN property p ON pp.property_id = p.id
+                    WHERE pp.product_id = :product_id AND p.type_ = 'tag'";
+                    $stmt = $pdo->prepare($query);
+                    $stmt->bindParam(':product_id', $productId);
+                    $stmt->execute();
+                }
+            
+                    $query = "INSERT INTO product_property (product_id, property_id) VALUES (:product_id, :property_id)";
+                    $stmt = $pdo->prepare($query);
+                    foreach($selected_tags as $tag_id) {
+                        $stmt->execute([
+                            'product_id' => $productId,
+                            'property_id' => $tag_id
+                        ]);
+                    }
+            
+                    $query = "INSERT INTO product_property (product_id, property_id) VALUES (:product_id, :property_id)";
+                    $stmt = $pdo->prepare($query);
+                    foreach($selected_categories as $category_id) {
+                        $stmt->execute([
+                            'product_id' => $productId,
+                            'property_id' => $category_id
+                        ]);
+                    }
+            }
+            }
     }
 
     $query = "SELECT id, name_ FROM property WHERE type_ = 'tag'";
@@ -515,7 +584,7 @@ else
                         echo "<img src='" . htmlspecialchars($image) . "' height='50' alt='Uploaded Image'>";
                     }
                 }
-                    ?>                  
+                ?>                  
             </div>
             <div class="ui input">
                 <?php if(isset($product_id)){ ?>
@@ -555,7 +624,6 @@ else
                     <?php }  ?>
             </div>
 
-
             <div class="box_property">
             <div class="checkbox-group_flex">
                     <p class="property_name">Category</p>
@@ -564,7 +632,7 @@ else
             <div class="checkbox-group">
             <?php if($categories) {
             foreach ($categories as $category){
-                $checked_category = in_array($category['id'], $selected_categories) ? 'checked': ''?>
+                $checked_category = in_array($category['id'], $selected_categories) && empty($productId) ? 'checked': ''?>
             <label>
                 <input <?php echo $checked_category ?> class="checkbox_property" type="checkbox" name="categories[]" value="<?=htmlspecialchars($category['id']) ?>">
                 <?php echo htmlspecialchars($category['name_']) ?>
@@ -582,7 +650,7 @@ else
     <div class="checkbox-group">
         <?php if($tags) {
             foreach ($tags as $tag){
-                $checked_tag = in_array($tag['id'], $selected_tags) ? 'checked': ''?>
+                $checked_tag = in_array($tag['id'], $selected_tags) && empty($productId) ? 'checked': ''?>
             <label>
                 <input <?php echo $checked_tag ?> class="checkbox_property" type="checkbox" name="tags[]" value="<?=htmlspecialchars($tag['id']) ?>">
                 <?php echo htmlspecialchars($tag['name_']) ?>
