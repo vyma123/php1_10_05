@@ -157,3 +157,158 @@ function handleMultipleUploads($files, $target_dir) {
 }
 
 
+function getTotalRecords($pdo, $searchTermLike, $property_id1 = null, $property_id2 = null, 
+                         $date_from = null, $date_to = null,
+                         $price_from = null, $price_to = null
+                  ) {
+    if ($property_id1 && $property_id2 && $date_from && $date_to) {
+        $count_query = "
+    SELECT COUNT(DISTINCT products.id) 
+    FROM products
+    JOIN product_property pp1 ON products.id = pp1.product_id AND pp1.property_id = :property_id1
+    JOIN product_property pp2 ON products.id = pp2.product_id AND pp2.property_id = :property_id2
+    WHERE product_name LIKE :search_term 
+    AND date BETWEEN :date_from AND :date_to
+    AND price BETWEEN :price_from AND :price_to";
+
+$count_stmt = $pdo->prepare($count_query);
+$count_stmt->bindParam(':property_id1', $property_id1, PDO::PARAM_INT);
+$count_stmt->bindParam(':property_id2', $property_id2, PDO::PARAM_INT);
+$count_stmt->bindParam(':date_from', $date_from, PDO::PARAM_STR);
+$count_stmt->bindParam(':date_to', $date_to, PDO::PARAM_STR);
+$count_stmt->bindParam(':price_from', $price_from, PDO::PARAM_STR);
+$count_stmt->bindParam(':price_to', $price_to, PDO::PARAM_STR);
+
+    } else {
+        $count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
+        $count_stmt = $pdo->prepare($count_query);
+    }
+
+    $count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+    $count_stmt->execute();
+    return $count_stmt->fetchColumn();
+}
+
+
+function getRecordsdate($pdo, $searchTermLike, $property_id1 = null, $property_id2 = null, 
+                         $date_from = null, $date_to = null,
+                         $price_from = null, $price_to = null
+                  ) {
+    if ($property_id1 && $property_id2 && $date_from && $date_to) {
+        $count_query = "
+    SELECT COUNT(DISTINCT products.id) 
+    FROM products
+    JOIN product_property pp1 ON products.id = pp1.product_id AND pp1.property_id = :property_id1
+    JOIN product_property pp2 ON products.id = pp2.product_id AND pp2.property_id = :property_id2
+    WHERE product_name LIKE :search_term 
+    AND date BETWEEN :date_from AND :date_to
+    AND price BETWEEN :price_from AND :price_to";
+
+$count_stmt = $pdo->prepare($count_query);
+$count_stmt->bindParam(':property_id1', $property_id1, PDO::PARAM_INT);
+$count_stmt->bindParam(':property_id2', $property_id2, PDO::PARAM_INT);
+$count_stmt->bindParam(':date_from', $date_from, PDO::PARAM_STR);
+$count_stmt->bindParam(':date_to', $date_to, PDO::PARAM_STR);
+$count_stmt->bindParam(':price_from', $price_from, PDO::PARAM_STR);
+$count_stmt->bindParam(':price_to', $price_to, PDO::PARAM_STR);
+
+    } else {
+        $count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
+        $count_stmt = $pdo->prepare($count_query);
+    }
+
+    $count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+    $count_stmt->execute();
+    return $count_stmt->fetchColumn();
+}
+
+function getRecord_property($pdo, $searchTermLike, $property_id1 = null, $property_id2 = null) {
+    if ($property_id1 && $property_id2 ) {
+        $count_query = "
+    SELECT COUNT(DISTINCT products.id) 
+    FROM products
+    JOIN product_property pp1 ON products.id = pp1.product_id AND pp1.property_id = :property_id1
+    JOIN product_property pp2 ON products.id = pp2.product_id AND pp2.property_id = :property_id2
+    WHERE product_name LIKE :search_term";
+
+$count_stmt = $pdo->prepare($count_query);
+$count_stmt->bindParam(':property_id1', $property_id1, PDO::PARAM_INT);
+$count_stmt->bindParam(':property_id2', $property_id2, PDO::PARAM_INT);
+
+
+    } else {
+        $count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
+        $count_stmt = $pdo->prepare($count_query);
+    }
+
+    $count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+    $count_stmt->execute();
+    return $count_stmt->fetchColumn();
+}
+
+function getTotalRecordsproperty($pdo, $searchTermLike, $property_id = null) {
+    if ($property_id) {
+        $count_query = "
+    SELECT COUNT(DISTINCT products.id) 
+    FROM products
+    JOIN product_property pp1 ON products.id = pp1.product_id AND pp1.property_id = :property_id
+    WHERE product_name LIKE :search_term";
+
+$count_stmt = $pdo->prepare($count_query);
+$count_stmt->bindParam(':property_id', $property_id, PDO::PARAM_INT);
+
+    } else {
+        $count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
+        $count_stmt = $pdo->prepare($count_query);
+    }
+
+    $count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+    $count_stmt->execute();
+    return $count_stmt->fetchColumn();
+}
+
+
+
+function getRecordCount($pdo, $searchTermLike, $category = null, $tag = null, $date_from = null, $date_to = null, $price_from = null, $price_to = null) {
+    // Base query
+    $query = "SELECT COUNT(DISTINCT products.id) FROM products";
+    $conditions = ["product_name LIKE :search_term"];
+    $params = [':search_term' => $searchTermLike];
+    
+    // Joins for category and tag filters
+    if ($category) {
+        $query .= " JOIN product_property pp1 ON products.id = pp1.product_id AND pp1.property_id = :category";
+        $params[':category'] = $category;
+    }
+    if ($tag) {
+        $query .= " JOIN product_property pp2 ON products.id = pp2.product_id AND pp2.property_id = :tag";
+        $params[':tag'] = $tag;
+    }
+
+    // Date range filter
+    if ($date_from && $date_to) {
+        $conditions[] = "date BETWEEN :date_from AND :date_to";
+        $params[':date_from'] = $date_from;
+        $params[':date_to'] = $date_to;
+    }
+
+    // Price range filter
+    if ($price_from && $price_to) {
+        $conditions[] = "price BETWEEN :price_from AND :price_to";
+        $params[':price_from'] = $price_from;
+        $params[':price_to'] = $price_to;
+    }
+
+    // Add conditions to the query
+    if (!empty($conditions)) {
+        $query .= " WHERE " . implode(" AND ", $conditions);
+    }
+
+    // Prepare and execute the statement
+    $stmt = $pdo->prepare($query);
+    foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+    }
+    $stmt->execute();
+    return $stmt->fetchColumn();
+}

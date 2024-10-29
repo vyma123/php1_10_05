@@ -23,11 +23,7 @@ $stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
 $stmt->execute();
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Counting total records
-// $count_query = "SELECT COUNT(*) FROM products";
-// $count_stmt = $pdo->prepare($count_query);
-// $count_stmt->execute();
-// $total_records = $count_stmt->fetchColumn();
+  
 
 
 //search
@@ -40,11 +36,7 @@ $stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
 $stmt->execute();
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// $count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
-// $count_stmt = $pdo->prepare($count_query);
-// $count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
-// $count_stmt->execute();
-// $total_records = $count_stmt->fetchColumn();
+
 
 
 //filter
@@ -53,13 +45,16 @@ $sort_by = isset($_GET['sort_by']) && in_array($_GET['sort_by'], $allowed_sort_c
 $allowed_order_directions = ['ASC', 'DESC'];
 $order = isset($_GET['order']) && in_array($_GET['order'], $allowed_order_directions) ? $_GET['order'] : 'ASC';
 $category = $_GET['category'] ?? 0;
-$cc = $_GET['category'] ?? 0;
+$tag = $_GET['tag'] ?? 0;
+$category_page = $_GET['category'] ?? 0;
+$tag_page = $_GET['tag'] ?? 0;
 $tag = $_GET['tag'] ?? 0;
 $date_from = $_GET['date_from'] ?? null;
 $date_to = $_GET['date_to'] ?? null;
 $price_from = $_GET['price_from'] ?? null;
 $price_to = $_GET['price_to'] ?? null;
 
+//gộp bảng và tìm kiếm theo tên
 $query = "
 SELECT products.*, 
        GROUP_CONCAT(DISTINCT p_tags.name_ SEPARATOR ', ') AS tags, 
@@ -106,11 +101,12 @@ $searchTermLike = "%$searchTerm%";
 $stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
 if ($category != 0) {
     $stmt->bindParam(':category_id', $category, PDO::PARAM_INT);
-    $cc = $category;
+    $category_page = $category;
 }
 
 if ($tag != 0) {
     $stmt->bindParam(':tag_id', $tag, PDO::PARAM_INT);
+    $tag_page = $tag;
 }
 
 if (!empty($date_from)) {
@@ -136,30 +132,18 @@ $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 // Counting total records
-if(!empty($cc)){
-    echo $cc;
-
-    // $count_query = "SELECT COUNT(*) FROM products lef WHERE product_name LIKE :search_term";
-    $count_query = "
-SELECT COUNT(DISTINCT products.id) 
-FROM products
-JOIN product_property ON products.id = product_property.product_id
-WHERE product_property.property_id = :property_id and product_name LIKE :search_term";
-
-$count_stmt = $pdo->prepare($count_query);
-$count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
-$count_stmt->bindParam(':property_id', $category, PDO::PARAM_INT);
-
-$count_stmt->execute();
-$total_records = $count_stmt->fetchColumn();
-
-}else{
-$count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
-$count_stmt = $pdo->prepare($count_query);
-$count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
-$count_stmt->execute();
-$total_records = $count_stmt->fetchColumn();
+if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty($date_to)) || (!empty($price_from) && !empty($price_to))) {
+    // Use the detailed query with filters
+    $total_records = getRecordCount($pdo, $searchTermLike, $category_page, $tag_page, $date_from, $date_to, $price_from, $price_to);
+} else {
+    // Use the simpler query without filters
+    $count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
+    $count_stmt = $pdo->prepare($count_query);
+    $count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+    $count_stmt->execute();
+    $total_records = $count_stmt->fetchColumn();
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -253,16 +237,16 @@ $total_records = $count_stmt->fetchColumn();
                 ?>
                 </select>
                 <div class="ui input">
-                    <input type="date" id="date_from" name="date_from">
+                    <input type="date" value="<?= $date_from?>" id="date_from" name="date_from">
                 </div>
                 <div class="ui input">
-                    <input type="date" id="date_to" name="date_to">
+                    <input type="date" value="<?= $date_to?>" id="date_to" name="date_to">
                 </div>
                 <div class="ui input">
-                    <input type="text" id="price_from" name="price_from" placeholder="price from">
+                    <input type="text" value="<?= $price_from?>" id="price_from" name="price_from" placeholder="price from">
                 </div>
                 <div class="ui input">
-                    <input type="text" id="price_to" name="price_to" placeholder="price to">
+                    <input type="text" value="<?= $price_to?>" id="price_to" name="price_to" placeholder="price to">
                 </div>
                 <button type="submit" class="ui button">
                     Filter
@@ -367,14 +351,10 @@ $total_records = $count_stmt->fetchColumn();
         <tr>
             <td colspan="9" style="text-align: center;">Product not found</td>
         </tr>
-
-
         <?php }?>
   </tbody>
 </table>
 </div>
-
-
 
 
 <div class="pagination_box">
@@ -387,20 +367,21 @@ $total_records = $count_stmt->fetchColumn();
 
                 
                     $pagLink = "";
-                   
 
                 if ($page >= 2) {
                     echo "<a class='item' href='index.php?page=" . ($page - 1) . 
                     "&search=" . urlencode($searchTerm) . 
                     "&sort_by=" . htmlspecialchars($sort_by) . 
                     "&order=" . htmlspecialchars($order) .
-                    "&category=".htmlspecialchars($cc)."'> Prev </a>";
+                    "&category=".htmlspecialchars($category_page).
+                    "&tag=".htmlspecialchars($tag_page)."'> Prev </a>";
                 }else {
                     echo "<a class='item' href='index.php?page=" . $page . 
                     "&search=" . urlencode($searchTerm) . 
                     "&sort_by=" . htmlspecialchars($sort_by) . 
                     "&order=" . htmlspecialchars($order) . 
-                    "&category=".htmlspecialchars($cc)."'> Prev </a>";
+                    "&category=".htmlspecialchars($category_page).
+                    "&tag=".htmlspecialchars($tag_page)."'> Prev </a>";
                 }
 
                 for ($i = 1; $i <= $total_pages; $i++) {
@@ -409,13 +390,15 @@ $total_records = $count_stmt->fetchColumn();
                     "&search=" . urlencode($searchTerm) . 
                     "&sort_by=" . htmlspecialchars($sort_by) . 
                     "&order=" . htmlspecialchars($order) .
-                    "&category=".htmlspecialchars($cc)."'>" . $i . " </a>";
+                    "&category=".htmlspecialchars($category_page).
+                    "&tag=".htmlspecialchars($tag_page)."'>" . $i . " </a>";
                     } else {
                     $pagLink .= "<a class='item' href='index.php?page=" . $i . 
                     "&search=" . urlencode($searchTerm) . 
                     "&sort_by=" . htmlspecialchars($sort_by) . 
                     "&order=" . htmlspecialchars($order) .
-                    "&category=".htmlspecialchars($cc)."'>" . $i . " </a>";
+                    "&category=".htmlspecialchars($category_page).
+                    "&tag=".htmlspecialchars($tag_page)."'>" . $i . " </a>";
                     }
                 }
                 echo $pagLink;
@@ -426,8 +409,12 @@ $total_records = $count_stmt->fetchColumn();
                     "&search=" . urlencode($searchTerm) . 
                     "&sort_by=" . htmlspecialchars($sort_by) . 
                     "&order=" . htmlspecialchars($order) .
-                    "&category=".htmlspecialchars($cc)."'> Next </a>";
-
+                    "&category=".htmlspecialchars($category_page).
+                    "&tag=".htmlspecialchars($tag_page).
+                    "&date_from=".htmlspecialchars($date_from).
+                    "&date_to=".htmlspecialchars($date_to).
+                    "&price_from=".htmlspecialchars($price_from).
+                    "&price_to=".htmlspecialchars($price_to)."'> Next </a>";
 
 
                 }else {
@@ -435,8 +422,12 @@ $total_records = $count_stmt->fetchColumn();
                     "&search=" . urlencode($searchTerm) . 
                     "&sort_by=" . htmlspecialchars($sort_by) . 
                     "&order=" . htmlspecialchars($order) .
-                    "&category=".htmlspecialchars($cc)."'> Next </a>";
-
+                    "&category=".htmlspecialchars($category_page).
+                    "&tag=".htmlspecialchars($tag_page).
+                    "&date_from=".htmlspecialchars($date_from).
+                    "&date_to=".htmlspecialchars($date_to).
+                    "&price_from=".htmlspecialchars($price_from).
+                    "&price_to=".htmlspecialchars($price_to)."'> Next </a>";
                 }
                
                 ?>

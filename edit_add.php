@@ -349,8 +349,8 @@ else
 
                 $imageFile1 =  htmlspecialchars(basename($targetFilePath));
 
-                $stmt = $pdo->prepare("INSERT INTO products (product_name,sku, price, featured_image) 
-                                    VALUES (:product_name, :sku, :price, :featured_image)");
+                $stmt = $pdo->prepare("INSERT INTO products (product_name,sku, price, featured_image, date) 
+                                    VALUES (:product_name, :sku, :price, :featured_image, NOW())");
                 $stmt->bindParam(':product_name', $product_name);
                 $stmt->bindParam(':sku', $sku);
                 $stmt->bindParam(':price', $price);
@@ -374,8 +374,8 @@ else
                     foreach ($uploadedImages as $image) {
                         $imageFile =  htmlspecialchars(basename($image));
                     
-                    $stmt = $pdo->prepare("INSERT INTO products (product_name,sku, price, featured_image) 
-                                        VALUES (:product_name, :sku, :price, :featured_image)");
+                    $stmt = $pdo->prepare("INSERT INTO products (product_name,sku, price, featured_image, date) 
+                                        VALUES (:product_name, :sku, :price, :featured_image, NOW())");
                     $stmt->bindParam(':product_name', $product_name);
                     $stmt->bindParam(':sku', $sku);
                     $stmt->bindParam(':price', $price);
