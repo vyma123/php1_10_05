@@ -5,13 +5,10 @@ require_once "includes/functions.php";
 // get all products 
 $results = select_all_products($pdo);
 
-
-$searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
+$searchTerm = isset($_GET['search']) ? test_input($_GET['search']) : '';
 $per_page_record = 3;
 $page = isset($_GET["page"]) ? $_GET["page"] : 1;
 $page = filter_var($page, FILTER_VALIDATE_INT) !== false ? (int)$page : 1;
-
-
 
 $start_from = ($page - 1) * $per_page_record;
 
@@ -23,21 +20,15 @@ $stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
 $stmt->execute();
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-  
-
-
 //search
-$query = "SELECT * FROM products WHERE product_name LIKE :search_term LIMIT :start_from, :per_page";
-$stmt = $pdo->prepare($query);
-$searchTermLike = "%$searchTerm%";
-$stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
-$stmt->bindParam(':start_from', $start_from, PDO::PARAM_INT);
-$stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
-$stmt->execute();
-$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-
-
+// $query = "SELECT * FROM products WHERE product_name LIKE :search_term LIMIT :start_from, :per_page";
+// $stmt = $pdo->prepare($query);
+// $searchTermLike = "%$searchTerm%";
+// $stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+// $stmt->bindParam(':start_from', $start_from, PDO::PARAM_INT);
+// $stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
+// $stmt->execute();
+// $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 //filter
 $allowed_sort_columns = ['date', 'product_name', 'price'];
@@ -54,7 +45,6 @@ $date_to = $_GET['date_to'] ?? null;
 $price_from = $_GET['price_from'] ?? null;
 $price_to = $_GET['price_to'] ?? null;
 
-//gộp bảng và tìm kiếm theo tên
 $query = "
 SELECT products.*, 
        GROUP_CONCAT(DISTINCT p_tags.name_ SEPARATOR ', ') AS tags, 
@@ -71,26 +61,24 @@ if ($category != 0) {
     $query .= " AND pp_categories.property_id = :category_id";
 }
 
-// Filter by tag if specified
 if ($tag != 0) {
     $query .= " AND pp_tags.property_id = :tag_id";
 }
 
-// Optional filters for date and price (if you want to include them)
 if (!empty($date_from)) {
-    $query .= " AND products.date >= :date_from"; // Assuming there's a 'created_at' column
+    $query .= " AND products.date >= :date_from"; 
 }
 
 if (!empty($date_to)) {
-    $query .= " AND products.date <= :date_to"; // Assuming there's a 'created_at' column
+    $query .= " AND products.date <= :date_to"; 
 }
 
 if (!empty($price_from)) {
-    $query .= " AND products.price >= :price_from"; // Assuming there's a 'price' column
+    $query .= " AND products.price >= :price_from"; 
 }
 
 if (!empty($price_to)) {
-    $query .= " AND products.price <= :price_to"; // Assuming there's a 'price' column
+    $query .= " AND products.price <= :price_to";
 }
 $query .= " GROUP BY products.id 
             ORDER BY $sort_by $order 
@@ -99,6 +87,7 @@ $stmt = $pdo->prepare($query);
 
 $searchTermLike = "%$searchTerm%";
 $stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
+
 if ($category != 0) {
     $stmt->bindParam(':category_id', $category, PDO::PARAM_INT);
     $category_page = $category;
@@ -130,20 +119,16 @@ $stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
 $stmt->execute();
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-
 // Counting total records
 if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty($date_to)) || (!empty($price_from) && !empty($price_to))) {
-    // Use the detailed query with filters
     $total_records = getRecordCount($pdo, $searchTermLike, $category_page, $tag_page, $date_from, $date_to, $price_from, $price_to);
 } else {
-    // Use the simpler query without filters
     $count_query = "SELECT COUNT(*) FROM products WHERE product_name LIKE :search_term";
     $count_stmt = $pdo->prepare($count_query);
     $count_stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
     $count_stmt->execute();
     $total_records = $count_stmt->fetchColumn();
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -218,18 +203,14 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
                 <select class="ui dropdown" name="tag">
                     <option value="0">Select Tag</option>
                     <?php
-                // Fetch tags from the database
                 $query = "SELECT p.id, p.name_ FROM property p WHERE p.type_ = 'tag'";
                 $stmt = $pdo->prepare($query);
                 $stmt->execute();
                 $tags = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
-                // Get the selected tag from the query parameters
-                $selectedTag = $_GET['tag'] ?? 0; // Default to 0 if not set
+                $selectedTag = $_GET['tag'] ?? 0; 
 
-                // Loop through the tags and create the options
                 foreach ($tags as $tag) {
-                    // Check if the current tag ID is equal to the selected tag
                     $selected = ($tag['id'] == $selectedTag) ? 'selected' : '';
 
                     echo "<option $selected value=\"{$tag['id']}\">" . htmlspecialchars($tag['name_']) . "</option>";
@@ -243,7 +224,8 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
                     <input type="date" value="<?= $date_to?>" id="date_to" name="date_to">
                 </div>
                 <div class="ui input">
-                    <input type="text" value="<?= $price_from?>" id="price_from" name="price_from" placeholder="price from">
+                    <input type="text" value="<?= $price_from?>" id="price_from" name="price_from" placeholder="price from"
+                    >
                 </div>
                 <div class="ui input">
                     <input type="text" value="<?= $price_to?>" id="price_to" name="price_to" placeholder="price to">
@@ -266,9 +248,9 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
       <th>SKU</th>
       <th>Price</th>
       <th>Feature Image</th>
-      <th>Gallery</th>
-      <th class="gallery_name">Categories</th>
-      <th>Tags</th>
+      <th class="gallery_name">Gallery</th>
+      <th >Categories</th>
+      <th class="tag_name">Tags</th>
       <th>Action</th>
     </tr>
   </thead>
@@ -277,9 +259,9 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
   <?php if (count($results) > 0) {
     
       foreach ($results as $row){
-        $product_id = $row['id'];
-          ?>
-          <tr>
+        $product_id = $row['id']; ?>
+
+     <tr>
       <td><?php echo htmlspecialchars($row['date'])?></td>
       <td class="product_name"><?php echo htmlspecialchars($row['product_name'])?></td>
       <td class="sku"><?php echo htmlspecialchars($row['sku'])?></td>
@@ -289,7 +271,7 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
 
       </td>
       <td class="gallery_images">
-            <?php 
+              <?php 
             $query = "SELECT p.name_ FROM product_property pp
                     JOIN property p ON pp.property_id = p.id
                     WHERE pp.product_id = :product_id AND p.type_ = 'gallery'";
@@ -299,8 +281,8 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
             $galleryImages = $stmt->fetchAll(PDO::FETCH_ASSOC);
             foreach ($galleryImages as $image) {?> 
 
-            <img height="40" src="./uploads/<?= $image['name_'] ?>">
-            <?php }?>
+        <img height="40" src="./uploads/<?= $image['name_'] ?>">
+      <?php }?>
       </td>
       <td>
       <?php 
@@ -342,7 +324,7 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
         <a class="edit_button" href="edit_add.php?product_id=<?php echo $product_id  ?>">
         <i class="edit icon"></i>
         </a>
-        <a class="delete_button" href="delete.php">
+        <a class="delete_button" href="delete.php?product_id=<?php echo $product_id?>&delete=1&total_records=<?php echo $total_records?>">
         <i class="trash icon"></i>
         </a>
       </td>
@@ -365,78 +347,47 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
                 // Number of pages required.
                 $total_pages = ceil($total_records / $per_page_record);
 
+                $base_url = 'index.php?search=' . urlencode($searchTerm) . 
+                '&sort_by=' . htmlspecialchars($sort_by) . 
+                '&order=' . htmlspecialchars($order) . 
+                '&category=' . htmlspecialchars($category_page) . 
+                '&tag=' . htmlspecialchars($tag_page) . 
+                '&date_from=' . htmlspecialchars($date_from) . 
+                '&date_to=' . htmlspecialchars($date_to) . 
+                '&price_from=' . htmlspecialchars($price_from) . 
+                '&price_to=' . htmlspecialchars($price_to);
+
                 
                     $pagLink = "";
 
-                if ($page >= 2) {
-                    echo "<a class='item' href='index.php?page=" . ($page - 1) . 
-                    "&search=" . urlencode($searchTerm) . 
-                    "&sort_by=" . htmlspecialchars($sort_by) . 
-                    "&order=" . htmlspecialchars($order) .
-                    "&category=".htmlspecialchars($category_page).
-                    "&tag=".htmlspecialchars($tag_page)."'> Prev </a>";
-                }else {
-                    echo "<a class='item' href='index.php?page=" . $page . 
-                    "&search=" . urlencode($searchTerm) . 
-                    "&sort_by=" . htmlspecialchars($sort_by) . 
-                    "&order=" . htmlspecialchars($order) . 
-                    "&category=".htmlspecialchars($category_page).
-                    "&tag=".htmlspecialchars($tag_page)."'> Prev </a>";
-                }
-
-                for ($i = 1; $i <= $total_pages; $i++) {
-                    if ($i == $page) {
-                    $pagLink .= "<a class='item active'  href='index.php?page=" . $i . 
-                    "&search=" . urlencode($searchTerm) . 
-                    "&sort_by=" . htmlspecialchars($sort_by) . 
-                    "&order=" . htmlspecialchars($order) .
-                    "&category=".htmlspecialchars($category_page).
-                    "&tag=".htmlspecialchars($tag_page)."'>" . $i . " </a>";
+                    if ($page >= 2) {
+                        echo "<a class='item' href='" . $base_url . "&page=" . ($page - 1) . "'> Prev </a>";
                     } else {
-                    $pagLink .= "<a class='item' href='index.php?page=" . $i . 
-                    "&search=" . urlencode($searchTerm) . 
-                    "&sort_by=" . htmlspecialchars($sort_by) . 
-                    "&order=" . htmlspecialchars($order) .
-                    "&category=".htmlspecialchars($category_page).
-                    "&tag=".htmlspecialchars($tag_page)."'>" . $i . " </a>";
+                        echo "<a class='item disabled'> Prev </a>";
                     }
-                }
-                echo $pagLink;
-
-                if ($page < $total_pages) {
-                    
-                    echo "<a class='item' href='index.php?page=" . ($page + 1) . 
-                    "&search=" . urlencode($searchTerm) . 
-                    "&sort_by=" . htmlspecialchars($sort_by) . 
-                    "&order=" . htmlspecialchars($order) .
-                    "&category=".htmlspecialchars($category_page).
-                    "&tag=".htmlspecialchars($tag_page).
-                    "&date_from=".htmlspecialchars($date_from).
-                    "&date_to=".htmlspecialchars($date_to).
-                    "&price_from=".htmlspecialchars($price_from).
-                    "&price_to=".htmlspecialchars($price_to)."'> Next </a>";
-
-
-                }else {
-                    echo "<a class='item' href='index.php?page=" . $page . 
-                    "&search=" . urlencode($searchTerm) . 
-                    "&sort_by=" . htmlspecialchars($sort_by) . 
-                    "&order=" . htmlspecialchars($order) .
-                    "&category=".htmlspecialchars($category_page).
-                    "&tag=".htmlspecialchars($tag_page).
-                    "&date_from=".htmlspecialchars($date_from).
-                    "&date_to=".htmlspecialchars($date_to).
-                    "&price_from=".htmlspecialchars($price_from).
-                    "&price_to=".htmlspecialchars($price_to)."'> Next </a>";
-                }
-               
-                ?>
-
                 
+                   
+                    for ($i = 1; $i <= $total_pages; $i++) {
+                        if ($i == $page) {
+                            $pagLink .= "<a class='item active' href='" . $base_url . "&page=" . $i . "'>" . $i . " </a>";
+                        } else {
+                            $pagLink .= "<a class='item' href='" . $base_url . "&page=" . $i . "'>" . $i . " </a>";
+                        }
+                    }
+                    echo $pagLink;
+                
+                    
+                    if ($page < $total_pages) {
+                        echo "<a class='item' href='" . $base_url . "&page=" . ($page + 1) . "'> Next </a>";
+                    } else {
+                        echo "<a class='item disabled'> Next </a>"; 
+                    }
+                ?>                
             </div>
 </div>
 </section>
 
+<script src="script.js">
+</script>
 </body>
-
 </html>

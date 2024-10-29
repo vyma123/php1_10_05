@@ -135,6 +135,13 @@
 
 }
 
+.container table thead tr .tag_name {
+    width: 200px !important;
+}
+
+
+
+
 .checkbox-group_flex{
     display: flex;
     align-items: center;

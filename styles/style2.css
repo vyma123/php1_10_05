@@ -19,11 +19,31 @@
 .container table tbody tr .gallery_images::-webkit-scrollbar {
     display: none; 
 }
+.container table tbody tr  {
+    text-align: center;
+
+}
+
+.container table tbody tr .sku  {
+    max-width: 150px;
+    overflow-wrap: break-word;
+
+}
+
+.container table thead tr{
+    text-align: center;
+}
 
 .container table thead tr .gallery_name {
     width: 250px;
 
 }
+
+.container table thead tr .tag_name {
+    width: 200px !important;
+}
+
+
 
 .container table tbody tr .gallery_images img{
     

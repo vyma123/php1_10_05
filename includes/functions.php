@@ -269,13 +269,12 @@ $count_stmt->bindParam(':property_id', $property_id, PDO::PARAM_INT);
 
 
 
-function getRecordCount($pdo, $searchTermLike, $category = null, $tag = null, $date_from = null, $date_to = null, $price_from = null, $price_to = null) {
-    // Base query
+function getRecordCount($pdo, $searchTermLike, $category = null, $tag = null, $date_from = null, 
+                        $date_to = null, $price_from = null, $price_to = null) {
     $query = "SELECT COUNT(DISTINCT products.id) FROM products";
     $conditions = ["product_name LIKE :search_term"];
     $params = [':search_term' => $searchTermLike];
     
-    // Joins for category and tag filters
     if ($category) {
         $query .= " JOIN product_property pp1 ON products.id = pp1.product_id AND pp1.property_id = :category";
         $params[':category'] = $category;
@@ -285,26 +284,22 @@ function getRecordCount($pdo, $searchTermLike, $category = null, $tag = null, $d
         $params[':tag'] = $tag;
     }
 
-    // Date range filter
     if ($date_from && $date_to) {
         $conditions[] = "date BETWEEN :date_from AND :date_to";
         $params[':date_from'] = $date_from;
         $params[':date_to'] = $date_to;
     }
 
-    // Price range filter
     if ($price_from && $price_to) {
         $conditions[] = "price BETWEEN :price_from AND :price_to";
         $params[':price_from'] = $price_from;
         $params[':price_to'] = $price_to;
     }
 
-    // Add conditions to the query
     if (!empty($conditions)) {
         $query .= " WHERE " . implode(" AND ", $conditions);
     }
 
-    // Prepare and execute the statement
     $stmt = $pdo->prepare($query);
     foreach ($params as $key => $value) {
         $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
