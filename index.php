@@ -20,15 +20,6 @@ $stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
 $stmt->execute();
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-//search
-// $query = "SELECT * FROM products WHERE product_name LIKE :search_term LIMIT :start_from, :per_page";
-// $stmt = $pdo->prepare($query);
-// $searchTermLike = "%$searchTerm%";
-// $stmt->bindParam(':search_term', $searchTermLike, PDO::PARAM_STR);
-// $stmt->bindParam(':start_from', $start_from, PDO::PARAM_INT);
-// $stmt->bindParam(':per_page', $per_page_record, PDO::PARAM_INT);
-// $stmt->execute();
-// $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 //filter
 $allowed_sort_columns = ['date', 'product_name', 'price'];
@@ -321,10 +312,21 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
             <?php }?>
       </td>
       <td>
-        <a class="edit_button" href="edit_add.php?product_id=<?php echo $product_id  ?>">
+        <a class="edit_button" href="edit_add.php?product_id=<?php echo htmlspecialchars($product_id)  ?>">
         <i class="edit icon"></i>
         </a>
-        <a class="delete_button" href="delete.php?product_id=<?php echo $product_id?>&delete=1&total_records=<?php echo $total_records?>">
+        <?php 
+        $base_url = 'index.php?search=' . urlencode($searchTerm) . 
+        '&sort_by=' . htmlspecialchars($sort_by) . 
+        '&order=' . htmlspecialchars($order) . 
+        '&category=' . htmlspecialchars($category_page) . 
+        '&tag=' . htmlspecialchars($tag_page) . 
+        '&date_from=' . htmlspecialchars($date_from) . 
+        '&date_to=' . htmlspecialchars($date_to) . 
+        '&price_from=' . htmlspecialchars($price_from) . 
+        '&price_to=' . htmlspecialchars($price_to);
+        ?>
+        <a class="delete_button" href="delete.php?product_id=<?php echo $product_id?>&delete=1&total_records=<?php echo $total_records;?>&<?php echo  $base_url;?>">
         <i class="trash icon"></i>
         </a>
       </td>
@@ -357,7 +359,6 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
                 '&price_from=' . htmlspecialchars($price_from) . 
                 '&price_to=' . htmlspecialchars($price_to);
 
-                
                     $pagLink = "";
 
                     if ($page >= 2) {

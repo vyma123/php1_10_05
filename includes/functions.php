@@ -6,6 +6,11 @@ function isValidInput($input){
     return preg_match('/^[\p{L}0-9 .,–\-]+$/u', $input);
 }
 
+function isValidNumberWithDotInput($input) {
+    return preg_match('/^[0-9.]+$/', $input);
+}
+
+
 
 function add_property(object $pdo, string $type_, string $name) {
     $query = "INSERT INTO property (type_, name_ ) VALUES (:type_, :name_);";

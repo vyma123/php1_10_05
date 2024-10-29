@@ -16,6 +16,11 @@ if(isset($_GET['product_id'])){
     $product_id = $_GET['product_id'];
     $name_button = 'Edit Product';
 
+    if (!is_numeric($product_id)) {
+        header("Location: index.php");
+        exit; 
+    }
+
     $query = "SELECT * FROM products WHERE id = :product_id";
     $stmt = $pdo->prepare($query);
     $stmt->bindParam(':product_id', $product_id, PDO::PARAM_INT);
@@ -78,7 +83,7 @@ if(isset($_GET['product_id'])){
       if ($overallUploadOk == 1) {
     
         if (move_uploaded_file(($_FILES["singleFile"]["tmp_name"]), $single_target_file) && !empty($product_name) && !empty($sku) 
-            && !empty($price) && isValidInput($product_name) && isValidInput($sku) && isValidInput($price) && numbers_only($price)) {
+            && !empty($price) && isValidInput($product_name) && isValidInput($sku) && isValidNumberWithDotInput($price) && numbers_only($price)) {
             echo "The single file " . htmlspecialchars(basename($_FILES["singleFile"]["name"])) . " has been uploaded.<br>";
 
             $singleFileName = $_FILES["singleFile"]["name"];
@@ -95,7 +100,7 @@ if(isset($_GET['product_id'])){
             echo "Sorry, there was an error uploading the single file.<br>";
         }
     }else if(!empty($product_name) && !empty($sku) && !empty($price) && isValidInput($product_name) 
-    && isValidInput($sku) && isValidInput($price) && numbers_only($price) ){
+    && isValidInput($sku) && isValidNumberWithDotInput($price) && numbers_only($price) ){
         $sql = "UPDATE products SET product_name = :product_name, sku = :sku, price =:price, date = NOW() WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(":product_name", $product_name);
@@ -117,9 +122,9 @@ if(isset($_GET['product_id'])){
         if(empty($product_name)){$empty_name = 'empty_field'; echo 'Fill Product Name <br>  ';}
         if(!isValidInput($sku) && !empty($sku)){  $empty_sku = 'empty_field'; echo "sku don't allow special character <br>";}
         if(empty($sku)){  $empty_sku = 'empty_field'; echo 'Fill sku <br>';}
-        if(!isValidInput($price) && !empty($price)){  $empty_price = 'empty_field'; echo "price don't allow special character <br>";}
+        if(!isValidNumberWithDotInput($price) && !empty($price)){  $empty_price = 'empty_field'; echo "price don't allow special character <br>";}
         if(empty($price)){  $empty_price = 'empty_field'; echo 'Fill price<br>';}
-        if(!numbers_only($price) && isValidInput($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
+        if(!numbers_only($price) && isValidNumberWithDotInput($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
     } 
 
       
@@ -148,7 +153,7 @@ if(isset($_GET['product_id'])){
             $stmt->bindParam(':product_id', $product_id, PDO::PARAM_INT);
             $stmt->execute();
             $old_images = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+            $uploadSuccess = false;
             
             foreach ($_FILES['multipleFiles']['name'] as $key => $name) {
          
@@ -158,8 +163,9 @@ if(isset($_GET['product_id'])){
                     $imageFileTypes = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
         
                     $check = getimagesize($_FILES['multipleFiles']['tmp_name'][$key]);
+                    
                     if ($check !== false && in_array($imageFileTypes, ["jpg", "jpeg", "png", "gif"]) && $_FILES['multipleFiles']['size'][$key] <= 5000000) {
-                        
+
                         if (move_uploaded_file($_FILES['multipleFiles']['tmp_name'][$key], $target_file)) {
                             
                             $query = "INSERT INTO property (name_, type_) VALUES (:name_, 'gallery')";
@@ -174,6 +180,9 @@ if(isset($_GET['product_id'])){
                             $stmt->bindParam(':product_id', $product_id);
                             $stmt->bindParam(':property_id', $property_id);
                             $stmt->execute();
+                            $uploadSuccess = true;
+
+
                         } else {
                             echo "Sorry, there was an error uploading file: {$name}.<br>";
                         }
@@ -183,6 +192,10 @@ if(isset($_GET['product_id'])){
                         
                     }
                 }
+
+            }
+            if ($uploadSuccess) {
+                echo "Update successfully";
             }
         }   
         
@@ -339,12 +352,10 @@ else
                 }
             }
 
-          
-
 
             if(!empty($product_name) && !empty($targetFilePath) && !empty($sku) && !empty($price)
             && isValidInput($product_name) 
-            && isValidInput($sku) && isValidInput($price) && numbers_only($price)){
+            && isValidInput($sku) && isValidNumberWithDotInput($price) && numbers_only($price)){
             try {
 
                 $imageFile1 =  htmlspecialchars(basename($targetFilePath));
@@ -369,7 +380,7 @@ else
             }
             }else if(!empty($uploadedImages) && !empty($product_name) && !empty($sku) && !empty($price)
                     && isValidInput($product_name) 
-                    && isValidInput($sku) && isValidInput($price) && numbers_only($price)) {
+                    && isValidInput($sku) && isValidNumberWithDotInput($price) && numbers_only($price)) {
                 
                     foreach ($uploadedImages as $image) {
                         $imageFile =  htmlspecialchars(basename($image));
@@ -393,9 +404,9 @@ else
                 if(empty($product_name)){$empty_name = 'empty_field'; echo 'Fill Product Name <br>  ';}
                 if(!isValidInput($sku) && !empty($sku)){  $empty_sku = 'empty_field'; echo "sku don't allow special character <br>";}
                 if(empty($sku)){  $empty_sku = 'empty_field'; echo 'Fill sku <br>';}
-                if(!isValidInput($price) && !empty($price)){  $empty_price = 'empty_field'; echo "price don't allow special character <br>";}
+                if(!isValidNumberWithDotInput($price) && !empty($price)){  $empty_price = 'empty_field'; echo "price don't allow special character <br>";}
                 if(empty($price)){  $empty_price = 'empty_field'; echo 'Fill price<br>';}
-                if(!numbers_only($price) && isValidInput($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
+                if(!numbers_only($price) && isValidNumberWithDotInput($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
                 if(empty($uploadedImages)){  $empty_image = 'empty_field'; echo "please upload image";}
 
 
@@ -404,10 +415,10 @@ else
             
             if ((!empty($product_name) && !empty($targetFilePath) && !empty($sku) && !empty($price)
             && isValidInput($product_name) 
-            && isValidInput($sku) && isValidInput($price) && numbers_only($price)) ||(
+            && isValidInput($sku) && isValidNumberWithDotInput($price) && numbers_only($price)) ||(
             !empty($uploadedImages) && !empty($product_name) && !empty($sku) && !empty($price)
             && isValidInput($product_name) 
-            && isValidInput($sku) && isValidInput($price) && numbers_only($price))) {
+            && isValidInput($sku) && isValidNumberWithDotInput($price) && numbers_only($price))) {
                 try {
                        $productId = $pdo->lastInsertId(); 
         
@@ -422,7 +433,6 @@ else
                             $linkStmt->bindParam(':product_id', $productId);
                             $linkStmt->bindParam(':property_id', $propertyId);
                             $linkStmt->execute();
-
                         }
         
         
@@ -530,7 +540,6 @@ else
     <link rel="stylesheet" href="styles/style2.css">
 
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
-
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css" integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
@@ -547,7 +556,7 @@ else
                 <input class="<?php echo $empty_sku ?>" value="<?php echo $sku?>" name="sku" type="text" placeholder="SKU">
             </div>
             <div class="ui input ">
-                <input class="<?php echo $empty_price ?>" value="<?php echo $price?>" name="price" type="text" placeholder="Price">
+                <input id="price" class="<?php echo $empty_price ?>" value="<?php echo $price?>" name="price" type="text" placeholder="Price">
             </div>
             <div class="ui">
                 <?php if(isset($product_id)){?>
@@ -596,41 +605,45 @@ else
                    <input type="hidden" name="uploadedImages2" value='<?= htmlspecialchars(json_encode($uploadedImages2)) ?>'>
                     <?php }  ?>
             </div>
-
-            <div class="box_property">
+        <div class="box_prperty">
+            <div class="select-group">
             <div class="checkbox-group_flex">
-                    <p class="property_name">Category</p>
-                    <p>:</p>
+             <p class="property_name">Category</p>
+             <p>:</p>
             </div>
-            <div class="checkbox-group">
+        <select name="categories[]" multiple class="select_property">
             <?php if($categories) {
-            foreach ($categories as $category){
-                $checked_category = in_array($category['id'], $selected_categories) && empty($productId) ? 'checked': ''?>
-            <label>
-                <input <?php echo $checked_category ?> class="checkbox_property" type="checkbox" name="categories[]" value="<?=htmlspecialchars($category['id']) ?>">
-                <?php echo htmlspecialchars($category['name_']) ?>
-            </label>
-           <?php }} ?>
-        </div>
-            </div>
-            </div>
-
-            <div class="box_property">
-    <div class="checkbox-group_flex">
-        <p class="property_name">Tag</p>
-        <p>:</p>
+                foreach ($categories as $category){
+                    // Check if the category is selected
+                    $selected_category = in_array($category['id'], $selected_categories) && empty($productId) ? 'selected' : '';
+            ?>
+            <option value="<?= htmlspecialchars($category['id']) ?>" <?= $selected_category ?>>
+                <?= htmlspecialchars($category['name_']) ?>
+            </option>
+            <?php }} ?>
+        </select>
     </div>
-    
-    <div class="checkbox-group">
-        <?php if($tags) {
-            foreach ($tags as $tag){
-                $checked_tag = in_array($tag['id'], $selected_tags) && empty($productId) ? 'checked': ''?>
-            <label>
-                <input <?php echo $checked_tag ?> class="checkbox_property" type="checkbox" name="tags[]" value="<?=htmlspecialchars($tag['id']) ?>">
-                <?php echo htmlspecialchars($tag['name_']) ?>
-            </label>
-           <?php }} ?>
+ 
+    <div class="select-group">
+        <div class="checkbox-group_flex">
+            <p class="property_name">Tags</p>
+            <p>:</p>
         </div>
+        <select name="tags[]" multiple class="select_property">
+            <?php if($tags) {
+                foreach ($tags as $tag){
+                    // Check if the tag is selected
+                    $selected_tag = in_array($tag['id'], $selected_tags) && empty($productId) ? 'selected' : '';
+            ?>
+            <option value="<?= htmlspecialchars($tag['id']) ?>" <?= $selected_tag ?>>
+                <?= htmlspecialchars($tag['name_']) ?>
+            </option>
+            <?php }} ?>
+        </select>
+    </div>
+</div>
+
+        
         </div>
             <div class="button_edit_add">
                 <a class="ui button" href="index.php">
@@ -642,5 +655,6 @@ else
             </div>
         </div>
     </form>
+    <script src="script.js"></script>
 </body>
 </html>

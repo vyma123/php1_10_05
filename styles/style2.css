@@ -63,3 +63,10 @@
 .container .box_table{
     height: 30rem;
 }
+
+.box_property{
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-around !important;
+    height: 3rem;
+}
