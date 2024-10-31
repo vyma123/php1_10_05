@@ -9,3 +9,7 @@ document.getElementById('price_to').addEventListener('input', function (e) {
 });
 
 
+function confirmDelete() {
+    return confirm("Confirm delete");
+}
+

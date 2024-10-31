@@ -15,20 +15,22 @@ if(isset($_GET['product_id'])){
 
     $product_id = $_GET['product_id'];
     $name_button = 'Edit Product';
-
-    if (!is_numeric($product_id)) {
-        header("Location: index.php");
-        exit; 
-    }
+ 
 
     $query = "SELECT * FROM products WHERE id = :product_id";
     $stmt = $pdo->prepare($query);
     $stmt->bindParam(':product_id', $product_id, PDO::PARAM_INT);
     $stmt->execute();
+
+    if($stmt->rowCount() > 0){
+        
+    
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     $product_name = test_input($row['product_name']);
     $sku = test_input($row['sku']);
     $price = test_input($row['price']);
+
+
 
     if (empty($_FILES['singleFile']['name'])) {
         $query = "SELECT featured_image FROM products WHERE id = :product_id";
@@ -144,8 +146,7 @@ if(isset($_GET['product_id'])){
             $stmt->bindParam(':product_id', $product_id, PDO::PARAM_INT);
             $stmt->execute();
 
-           
-
+        
             $query = "SELECT p.name_ FROM product_property pp
                       JOIN property p ON pp.property_id = p.id
                       WHERE pp.product_id = :product_id AND p.type_ = 'gallery'";
@@ -273,6 +274,14 @@ if(isset($_GET['product_id'])){
     $selected_categories = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     }
+    else{
+        echo '<script>
+        alert("Product not found! Redirecting to the homepage.");
+        window.location.href = "index.php";
+      </script>';
+        exit();
+    }
+}
 
 else 
     {
@@ -408,8 +417,6 @@ else
                 if(empty($price)){  $empty_price = 'empty_field'; echo 'Fill price<br>';}
                 if(!numbers_only($price) && isValidNumberWithDotInput($price)){  $empty_price = 'empty_field'; echo "price just allow number";}
                 if(empty($uploadedImages)){  $empty_image = 'empty_field'; echo "please upload image";}
-
-
             }
             
             
@@ -605,7 +612,7 @@ else
                    <input type="hidden" name="uploadedImages2" value='<?= htmlspecialchars(json_encode($uploadedImages2)) ?>'>
                     <?php }  ?>
             </div>
-        <div class="box_prperty">
+        <div class="box_property">
             <div class="select-group">
             <div class="checkbox-group_flex">
              <p class="property_name">Category</p>

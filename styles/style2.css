@@ -1,3 +1,16 @@
+.box_property{
+    display: flex  ;
+    align-items: center ;
+    justify-content: space-around ;
+    margin-top: 1rem;
+}
+
+.box_property .select-group{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 .container table tbody tr .product_name{
     width: 200px;
 }
@@ -64,9 +77,3 @@
     height: 30rem;
 }
 
-.box_property{
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-around !important;
-    height: 3rem;
-}

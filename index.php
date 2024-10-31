@@ -22,8 +22,8 @@ $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 //filter
-$allowed_sort_columns = ['date', 'product_name', 'price'];
-$sort_by = isset($_GET['sort_by']) && in_array($_GET['sort_by'], $allowed_sort_columns) ? $_GET['sort_by'] : 'date';
+$allowed_sort_columns = ['id', 'product_name', 'price'];
+$sort_by = isset($_GET['sort_by']) && in_array($_GET['sort_by'], $allowed_sort_columns) ? $_GET['sort_by'] : 'id';
 $allowed_order_directions = ['ASC', 'DESC'];
 $order = isset($_GET['order']) && in_array($_GET['order'], $allowed_order_directions) ? $_GET['order'] : 'ASC';
 $category = $_GET['category'] ?? 0;
@@ -248,10 +248,9 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
   <tbody>
     
   <?php if (count($results) > 0) {
-    
+
       foreach ($results as $row){
         $product_id = $row['id']; ?>
-
      <tr>
       <td><?php echo htmlspecialchars($row['date'])?></td>
       <td class="product_name"><?php echo htmlspecialchars($row['product_name'])?></td>
@@ -259,7 +258,6 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
       <td><?php echo htmlspecialchars($row['price'])?></td>
       <td>
           <img height="30" src="./uploads/<?php echo $row['featured_image']; ?>">
-
       </td>
       <td class="gallery_images">
               <?php 
@@ -326,7 +324,7 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
         '&price_from=' . htmlspecialchars($price_from) . 
         '&price_to=' . htmlspecialchars($price_to);
         ?>
-        <a class="delete_button" href="delete.php?product_id=<?php echo $product_id?>&delete=1&total_records=<?php echo $total_records;?>&<?php echo  $base_url;?>">
+        <a  class="delete_button" href="delete.php?product_id=<?php echo $product_id?>&delete=1&total_records=<?php echo $total_records;?>&<?php echo  $base_url;?>" onclick="return confirmDelete();">
         <i class="trash icon"></i>
         </a>
       </td>
@@ -340,9 +338,7 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
 </table>
 </div>
 
-
 <div class="pagination_box">
-
 <div class="ui pagination menu">
                 <?php
                 echo "</br>";
@@ -367,7 +363,6 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
                         echo "<a class='item disabled'> Prev </a>";
                     }
                 
-                   
                     for ($i = 1; $i <= $total_pages; $i++) {
                         if ($i == $page) {
                             $pagLink .= "<a class='item active' href='" . $base_url . "&page=" . $i . "'>" . $i . " </a>";
@@ -377,7 +372,6 @@ if (!empty($category_page) || !empty($tag_page) || (!empty($date_from) && !empty
                     }
                     echo $pagLink;
                 
-                    
                     if ($page < $total_pages) {
                         echo "<a class='item' href='" . $base_url . "&page=" . ($page + 1) . "'> Next </a>";
                     } else {

@@ -130,7 +130,6 @@
 }
 
 .box_property .checkbox-group_flex .property_name{
-    width: 100px;
     margin: 0 !important;
 
 }
@@ -147,12 +146,7 @@
     align-items: center;
 }
 
-.box_property{
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-around !important;
-    height: 3rem;
-}
+
 
 .button_edit_add{
     display: flex;
@@ -174,4 +168,6 @@
 .container table tbody td .delete_button{
     color: rgba(105, 105, 105, 0.747);
 }
+
+
 
