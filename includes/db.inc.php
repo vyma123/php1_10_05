@@ -3,7 +3,7 @@
 $host = 'erdb1.mysql.database.azure.com';
 $dbname = 'erdb1';
 $dbusername = 'erdb1';
-$dbpassword = 'Matkhaumoi2@';
+$dbpassword = 'Matkhaumoi1@';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $dbusername, $dbpassword);
